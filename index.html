@@ -56,7 +56,7 @@
       </section>
 
       <section id="recipesView" class="view hidden">
-        <div class="panel"><div class="panel-head"><div><h3>食谱 / Costing</h3><p class="muted">点击食谱可查看与编辑配料</p></div><button id="addRecipeBtn" class="primary compact">+ 新增食谱</button></div>
+        <div class="panel"><div class="panel-head"><div><h3>食谱 / Costing</h3><p class="muted">新增食谱时可直接选择原材料并计算成本</p></div><button id="addRecipeBtn" class="primary compact">+ 新增食谱</button></div>
         <div class="table-wrap"><table><thead><tr><th>菜品</th><th>分类</th><th>售价</th><th>成本/份</th><th>Food Cost</th><th>毛利</th><th></th></tr></thead><tbody id="recipeRows"></tbody></table></div></div>
       </section>
     </main>
@@ -69,10 +69,25 @@
     <div class="grid2"><label>供应商<input id="supplier" /></label><label>备注<input id="ingredientNotes" /></label></div><div class="dialog-actions"><button type="button" class="secondary close-dialog">取消</button><button class="primary" value="default">保存</button></div>
   </form></dialog>
 
-  <dialog id="recipeDialog"><form id="recipeForm" method="dialog" class="dialog-form wide"><div class="dialog-head"><h3 id="recipeDialogTitle">新增食谱</h3><button type="button" class="icon-btn close-dialog">×</button></div><input id="recipeId" type="hidden" />
+  <dialog id="recipeDialog"><form id="recipeForm" method="dialog" class="dialog-form extra-wide"><div class="dialog-head"><h3 id="recipeDialogTitle">新增食谱</h3><button type="button" class="icon-btn close-dialog">×</button></div><input id="recipeId" type="hidden" />
     <div class="grid2"><label>中文菜名<input id="recipeNameCn" required /></label><label>英文菜名<input id="recipeNameEn" /></label></div>
     <div class="grid4"><label>分类<select id="recipeCategory"></select></label><label>出品数量<input id="recipeYield" type="number" step="0.01" min="0.01" value="1" required /></label><label>单位<input id="yieldUnit" value="份" /></label><label>售价 $<input id="sellingPrice" type="number" step="0.01" min="0" value="0" required /></label></div>
-    <div class="grid2"><label>目标 Food Cost %<input id="targetFoodCost" type="number" step="0.1" min="0.1" max="100" value="30" /></label><label>备注<input id="recipeNotes" /></label></div><label>做法<textarea id="method" rows="3"></textarea></label><div class="dialog-actions"><button type="button" class="secondary close-dialog">取消</button><button class="primary" value="default">保存并编辑配料</button></div>
+    <div class="grid2"><label>目标 Food Cost %<input id="targetFoodCost" type="number" step="0.1" min="0.1" max="100" value="30" /></label><label>备注<input id="recipeNotes" /></label></div><label>做法<textarea id="method" rows="3"></textarea></label>
+
+    <div class="recipe-material-section">
+      <div class="panel-head"><div><h3>食谱原材料</h3><p class="muted">从原材料库选择，输入实际用量</p></div></div>
+      <div class="ingredient-add-row">
+        <select id="draftIngredient"></select>
+        <input id="draftQuantity" type="number" step="0.001" min="0.001" placeholder="用量" />
+        <select id="draftUnit"><option>g</option><option>ml</option><option>pc</option></select>
+        <input id="draftWaste" type="number" step="0.1" min="0" max="99.9" value="0" placeholder="损耗%" />
+        <button id="addDraftIngredientBtn" type="button" class="primary compact">+ 添加原材料</button>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>原材料</th><th>用量</th><th>单位成本</th><th>损耗</th><th>成本</th><th></th></tr></thead><tbody id="draftIngredientRows"></tbody></table></div>
+      <div class="cost-summary"><div><span>总配料成本</span><strong id="draftCostTotal">$0.00</strong></div><div><span>每份成本</span><strong id="draftCostPerYield">$0.00</strong></div><div><span>Food Cost</span><strong id="draftCostPercent">0%</strong></div><div><span>毛利</span><strong id="draftGrossProfit">$0.00</strong></div></div>
+    </div>
+
+    <div class="dialog-actions"><button type="button" class="secondary close-dialog">取消</button><button class="primary" value="default">保存食谱</button></div>
   </form></dialog>
 
   <dialog id="costingDialog"><div class="dialog-form extra-wide"><div class="dialog-head"><div><h3 id="costingTitle">食谱 Costing</h3><p id="costingMeta" class="muted"></p></div><button type="button" class="icon-btn close-dialog">×</button></div>
