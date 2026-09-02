@@ -1,102 +1,13 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>品珍宫 · 食谱 Costing 管理</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <div id="toast"></div>
-
-  <section id="authView" class="auth-wrap">
-    <div class="auth-card">
-      <div class="brand-mark">YP</div>
-      <h1>食谱 Costing 管理系统</h1>
-      <p class="muted">Yummy Palace · 云端食谱与成本管理</p>
-      <form id="authForm" class="stack">
-        <label>邮箱<input id="email" type="email" required placeholder="name@example.com" /></label>
-        <label>密码<input id="password" type="password" minlength="6" required placeholder="至少 6 位" /></label>
-        <button class="primary" type="submit">登录</button>
-        <button id="signupBtn" class="secondary" type="button">第一次使用：注册账号</button>
-      </form>
-      <p class="hint">注册后如 Supabase 要求验证邮箱，请先到邮箱点击确认链接。</p>
-    </div>
-  </section>
-
-  <section id="appView" class="app hidden">
-    <aside class="sidebar">
-      <div>
-        <div class="brand-row"><div class="brand-mark small">YP</div><div><strong>品珍宫</strong><span>Recipe Costing</span></div></div>
-        <nav>
-          <button class="nav-btn active" data-view="dashboard">总览</button>
-          <button class="nav-btn" data-view="ingredients">原材料</button>
-          <button class="nav-btn" data-view="recipes">食谱 / Costing</button>
-        </nav>
-      </div>
-      <div class="user-box"><span id="userEmail"></span><button id="logoutBtn" class="text-btn">退出登录</button></div>
-    </aside>
-
-    <main class="main">
-      <header class="topbar"><div><h2 id="pageTitle">总览</h2><p id="pageSubtitle">查看食谱与成本概况</p></div><button id="refreshBtn" class="secondary compact">刷新资料</button></header>
-
-      <section id="dashboardView" class="view">
-        <div class="stats">
-          <article><span>原材料</span><strong id="statIngredients">0</strong></article>
-          <article><span>食谱</span><strong id="statRecipes">0</strong></article>
-          <article><span>平均 Food Cost</span><strong id="statFoodCost">0%</strong></article>
-          <article><span>平均毛利</span><strong id="statMargin">0%</strong></article>
-        </div>
-        <div class="panel"><div class="panel-head"><div><h3>食谱成本概览</h3><p class="muted">售价、成本、Food Cost 与毛利</p></div></div><div class="table-wrap"><table><thead><tr><th>菜品</th><th>售价</th><th>成本/份</th><th>Food Cost</th><th>毛利</th></tr></thead><tbody id="dashboardRows"></tbody></table></div></div>
-      </section>
-
-      <section id="ingredientsView" class="view hidden">
-        <div class="panel"><div class="panel-head"><div><h3>原材料库</h3><p class="muted">采购价变动后，相关食谱成本会自动重算</p></div><button id="addIngredientBtn" class="primary compact">+ 新增原材料</button></div>
-        <div class="table-wrap"><table><thead><tr><th>名称</th><th>分类</th><th>采购规格</th><th>采购价</th><th>净料率</th><th>实际单位成本</th><th></th></tr></thead><tbody id="ingredientRows"></tbody></table></div></div>
-      </section>
-
-      <section id="recipesView" class="view hidden">
-        <div class="panel"><div class="panel-head"><div><h3>食谱 / Costing</h3><p class="muted">新增食谱时可直接选择原材料并计算成本</p></div><button id="addRecipeBtn" class="primary compact">+ 新增食谱</button></div>
-        <div class="table-wrap"><table><thead><tr><th>菜品</th><th>分类</th><th>售价</th><th>成本/份</th><th>Food Cost</th><th>毛利</th><th></th></tr></thead><tbody id="recipeRows"></tbody></table></div></div>
-      </section>
-    </main>
-  </section>
-
-  <dialog id="ingredientDialog"><form id="ingredientForm" method="dialog" class="dialog-form"><div class="dialog-head"><h3 id="ingredientDialogTitle">新增原材料</h3><button type="button" class="icon-btn close-dialog">×</button></div><input id="ingredientId" type="hidden" />
-    <div class="grid2"><label>名称<input id="ingredientName" required /></label><label>分类<input id="ingredientCategory" value="其他" /></label></div>
-    <div class="grid3"><label>采购数量<input id="purchaseQuantity" type="number" step="0.001" min="0.001" value="1" required /></label><label>采购单位<select id="purchaseUnit"><option>kg</option><option>g</option><option>L</option><option>ml</option><option>pc</option><option>包</option><option>箱</option></select></label><label>采购价 $<input id="purchasePrice" type="number" step="0.01" min="0" required /></label></div>
-    <div class="grid3"><label>Costing 基础单位<select id="baseUnit"><option value="g">g</option><option value="ml">ml</option><option value="pc">pc</option></select></label><label>采购规格折算数量<input id="baseQuantity" type="number" step="0.001" min="0.001" value="1000" required /></label><label>净料率 %<input id="yieldPercent" type="number" step="0.1" min="0.1" max="100" value="100" required /></label></div>
-    <div class="grid2"><label>供应商<input id="supplier" /></label><label>备注<input id="ingredientNotes" /></label></div><div class="dialog-actions"><button type="button" class="secondary close-dialog">取消</button><button class="primary" value="default">保存</button></div>
-  </form></dialog>
-
-  <dialog id="recipeDialog"><form id="recipeForm" method="dialog" class="dialog-form extra-wide"><div class="dialog-head"><h3 id="recipeDialogTitle">新增食谱</h3><button type="button" class="icon-btn close-dialog">×</button></div><input id="recipeId" type="hidden" />
-    <div class="grid2"><label>中文菜名<input id="recipeNameCn" required /></label><label>英文菜名<input id="recipeNameEn" /></label></div>
-    <div class="grid4"><label>分类<select id="recipeCategory"></select></label><label>出品数量<input id="recipeYield" type="number" step="0.01" min="0.01" value="1" required /></label><label>单位<input id="yieldUnit" value="份" /></label><label>售价 $<input id="sellingPrice" type="number" step="0.01" min="0" value="0" required /></label></div>
-    <div class="grid2"><label>目标 Food Cost %<input id="targetFoodCost" type="number" step="0.1" min="0.1" max="100" value="30" /></label><label>备注<input id="recipeNotes" /></label></div><label>做法<textarea id="method" rows="3"></textarea></label>
-
-    <div class="recipe-material-section">
-      <div class="panel-head"><div><h3>食谱原材料</h3><p class="muted">从原材料库选择，输入实际用量</p></div></div>
-      <div class="ingredient-add-row">
-        <select id="draftIngredient"></select>
-        <input id="draftQuantity" type="number" step="0.001" min="0.001" placeholder="用量" />
-        <select id="draftUnit"><option>g</option><option>ml</option><option>pc</option></select>
-        <input id="draftWaste" type="number" step="0.1" min="0" max="99.9" value="0" placeholder="损耗%" />
-        <button id="addDraftIngredientBtn" type="button" class="primary compact">+ 添加原材料</button>
-      </div>
-      <div class="table-wrap"><table><thead><tr><th>原材料</th><th>用量</th><th>单位成本</th><th>损耗</th><th>成本</th><th></th></tr></thead><tbody id="draftIngredientRows"></tbody></table></div>
-      <div class="cost-summary"><div><span>总配料成本</span><strong id="draftCostTotal">$0.00</strong></div><div><span>每份成本</span><strong id="draftCostPerYield">$0.00</strong></div><div><span>Food Cost</span><strong id="draftCostPercent">0%</strong></div><div><span>毛利</span><strong id="draftGrossProfit">$0.00</strong></div></div>
-    </div>
-
-    <div class="dialog-actions"><button type="button" class="secondary close-dialog">取消</button><button class="primary" value="default">保存食谱</button></div>
-  </form></dialog>
-
-  <dialog id="costingDialog"><div class="dialog-form extra-wide"><div class="dialog-head"><div><h3 id="costingTitle">食谱 Costing</h3><p id="costingMeta" class="muted"></p></div><button type="button" class="icon-btn close-dialog">×</button></div>
-    <div class="cost-summary"><div><span>总配料成本</span><strong id="costTotal">$0.00</strong></div><div><span>每份成本</span><strong id="costPerYield">$0.00</strong></div><div><span>Food Cost</span><strong id="costPercent">0%</strong></div><div><span>毛利</span><strong id="grossProfit">$0.00</strong></div></div>
-    <div class="ingredient-add-row"><select id="costIngredient"></select><input id="costQuantity" type="number" step="0.001" min="0.001" placeholder="用量" /><select id="costUnit"><option>g</option><option>ml</option><option>pc</option></select><input id="costWaste" type="number" step="0.1" min="0" max="99.9" value="0" placeholder="损耗%" /><button id="addRecipeIngredientBtn" class="primary compact">加入配料</button></div>
-    <div class="table-wrap"><table><thead><tr><th>配料</th><th>用量</th><th>单位成本</th><th>损耗</th><th>成本</th><th></th></tr></thead><tbody id="costingRows"></tbody></table></div>
-  </div></dialog>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js"></script>
-</body>
-</html>
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>品珍宫 · 食谱 Costing 管理</title><link rel="stylesheet" href="styles.css"/></head>
+<body><div id="toast"></div>
+<section id="authView" class="auth-wrap"><div class="auth-card"><div class="brand-mark">YP</div><h1>食谱 Costing 管理系统</h1><p class="muted">Yummy Palace · 云端食谱与成本管理</p><form id="authForm" class="stack"><label>邮箱<input id="email" type="email" required placeholder="name@example.com"/></label><label>密码<input id="password" type="password" minlength="6" required placeholder="至少 6 位"/></label><button class="primary" type="submit">登录</button><button id="signupBtn" class="secondary" type="button">第一次使用：注册账号</button></form><p class="hint">注册后如 Supabase 要求验证邮箱，请先到邮箱点击确认链接。</p></div></section>
+<section id="appView" class="app hidden"><aside class="sidebar"><div><div class="brand-row"><div class="brand-mark small">YP</div><div><strong>品珍宫</strong><span>Recipe Costing</span></div></div><nav><button class="nav-btn active" data-view="dashboard">总览</button><button class="nav-btn" data-view="ingredients">原材料</button><button class="nav-btn" data-view="recipes">食谱 / Costing</button></nav></div><div class="user-box"><span id="userEmail"></span><button id="logoutBtn" class="text-btn">退出登录</button></div></aside><main class="main"><header class="topbar"><div><h2 id="pageTitle">总览</h2><p id="pageSubtitle">查看食谱与成本概况</p></div><button id="refreshBtn" class="secondary compact">刷新资料</button></header>
+<section id="dashboardView" class="view"><div class="stats"><article><span>原材料</span><strong id="statIngredients">0</strong></article><article><span>食谱</span><strong id="statRecipes">0</strong></article><article><span>平均 Food Cost</span><strong id="statFoodCost">0%</strong></article><article><span>平均毛利</span><strong id="statMargin">0%</strong></article></div><div class="panel"><div class="panel-head"><div><h3>食谱成本概览</h3><p class="muted">售价、成本、Food Cost 与毛利</p></div></div><div class="table-wrap"><table><thead><tr><th>菜品</th><th>售价</th><th>成本/份</th><th>Food Cost</th><th>毛利</th></tr></thead><tbody id="dashboardRows"></tbody></table></div></div></section>
+<section id="ingredientsView" class="view hidden"><div class="panel"><div class="panel-head"><div><h3>原材料库</h3><p class="muted">采购价变动后，相关食谱成本会自动重算</p></div><button id="addIngredientBtn" class="primary compact">+ 新增原材料</button></div><div class="table-wrap"><table><thead><tr><th>名称</th><th>分类</th><th>供应商</th><th>采购规格</th><th>采购价</th><th>净料率</th><th>实际单位成本</th><th></th></tr></thead><tbody id="ingredientRows"></tbody></table></div></div></section>
+<section id="recipesView" class="view hidden"><div class="panel"><div class="panel-head"><div><h3>食谱 / Costing</h3><p class="muted">新增食谱时可直接选择原材料并计算成本</p></div><button id="addRecipeBtn" class="primary compact">+ 新增食谱</button></div><div class="table-wrap"><table><thead><tr><th>菜品</th><th>分类</th><th>售价</th><th>成本/份</th><th>Food Cost</th><th>毛利</th><th></th></tr></thead><tbody id="recipeRows"></tbody></table></div></div></section></main></section>
+<dialog id="ingredientDialog"><form id="ingredientForm" method="dialog" class="dialog-form"><div class="dialog-head"><h3 id="ingredientDialogTitle">新增原材料</h3><button type="button" class="icon-btn close-dialog">×</button></div><input id="ingredientId" type="hidden"/><div class="grid2"><label>名称<input id="ingredientName" required/></label><label>分类<input id="ingredientCategory" value="其他"/></label></div><div class="grid3"><label>采购数量<input id="purchaseQuantity" type="number" step="0.001" min="0.001" value="1" required/></label><label>采购单位<select id="purchaseUnit"><option>kg</option><option>g</option><option>L</option><option>ml</option><option>pc</option><option>包</option><option>箱</option></select></label><label>采购价 $<input id="purchasePrice" type="number" step="0.01" min="0" required/></label></div><div class="grid3"><label>Costing 基础单位<select id="baseUnit"><option value="g">g</option><option value="ml">ml</option><option value="pc">pc</option></select></label><label>采购规格折算数量<input id="baseQuantity" type="number" step="0.001" min="0.001" value="1000" required/></label><label>净料率 %<input id="yieldPercent" type="number" step="0.1" min="0.1" max="100" value="100" required/></label></div><div class="grid2"><label>供应商<input id="supplier"/></label><label>备注<input id="ingredientNotes"/></label></div><div class="dialog-actions"><button type="button" class="secondary close-dialog">取消</button><button class="primary" value="default">保存</button></div></form></dialog>
+<dialog id="recipeDialog"><form id="recipeForm" method="dialog" class="dialog-form extra-wide"><div class="dialog-head"><h3 id="recipeDialogTitle">新增食谱</h3><button type="button" class="icon-btn close-dialog">×</button></div><input id="recipeId" type="hidden"/><div class="grid2"><label>中文菜名<input id="recipeNameCn" required/></label><label>英文菜名<input id="recipeNameEn"/></label></div><div class="grid4"><label>分类<select id="recipeCategory"></select></label><label>出品数量<input id="recipeYield" type="number" step="0.01" min="0.01" value="1" required/></label><label>单位<input id="yieldUnit" value="份"/></label><label>售价 $<input id="sellingPrice" type="number" step="0.01" min="0" value="0" required/></label></div><div class="grid2"><label>目标 Food Cost %<input id="targetFoodCost" type="number" step="0.1" min="0.1" max="100" value="30"/></label><label>备注<input id="recipeNotes"/></label></div><label>做法<textarea id="method" rows="3"></textarea></label><div class="recipe-material-section"><div class="panel-head"><div><h3>食谱原材料</h3><p class="muted">从原材料库选择，输入实际用量</p></div></div><div class="ingredient-add-row"><select id="draftIngredient"></select><input id="draftQuantity" type="number" step="0.001" min="0.001" placeholder="用量"/><select id="draftUnit"><option>g</option><option>ml</option><option>pc</option></select><input id="draftWaste" type="number" step="0.1" min="0" max="99.9" value="0" placeholder="损耗%"/><button id="addDraftIngredientBtn" type="button" class="primary compact">+ 添加原材料</button></div><div class="table-wrap"><table><thead><tr><th>原材料</th><th>用量</th><th>单位成本</th><th>损耗</th><th>成本</th><th></th></tr></thead><tbody id="draftIngredientRows"></tbody></table></div><div class="cost-summary"><div><span>总配料成本</span><strong id="draftCostTotal">$0.00</strong></div><div><span>每份成本</span><strong id="draftCostPerYield">$0.00</strong></div><div><span>Food Cost</span><strong id="draftCostPercent">0%</strong></div><div><span>毛利</span><strong id="draftGrossProfit">$0.00</strong></div></div></div><div class="dialog-actions"><button type="button" class="secondary close-dialog">取消</button><button class="primary" value="default">保存食谱</button></div></form></dialog>
+<dialog id="costingDialog"><div class="dialog-form extra-wide"><div class="dialog-head"><div><h3 id="costingTitle">食谱 Costing</h3><p id="costingMeta" class="muted"></p></div><button type="button" class="icon-btn close-dialog">×</button></div><div class="cost-summary"><div><span>总配料成本</span><strong id="costTotal">$0.00</strong></div><div><span>每份成本</span><strong id="costPerYield">$0.00</strong></div><div><span>Food Cost</span><strong id="costPercent">0%</strong></div><div><span>毛利</span><strong id="grossProfit">$0.00</strong></div></div><div class="ingredient-add-row"><select id="costIngredient"></select><input id="costQuantity" type="number" step="0.001" min="0.001" placeholder="用量"/><select id="costUnit"><option>g</option><option>ml</option><option>pc</option></select><input id="costWaste" type="number" step="0.1" min="0" max="99.9" value="0" placeholder="损耗%"/><button id="addRecipeIngredientBtn" class="primary compact">加入配料</button></div><div class="table-wrap"><table><thead><tr><th>配料</th><th>用量</th><th>单位成本</th><th>损耗</th><th>成本</th><th></th></tr></thead><tbody id="costingRows"></tbody></table></div></div></dialog>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="app.js"></script></body></html>
