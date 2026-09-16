@@ -32,3 +32,9 @@ function renderIngredients(){
 })();
 
 renderIngredients();
+
+if(!document.querySelector('script[src="recipe-quick-ingredient.js"]')){
+  const quickIngredientScript=document.createElement('script');
+  quickIngredientScript.src='recipe-quick-ingredient.js';
+  document.body.appendChild(quickIngredientScript);
+}
