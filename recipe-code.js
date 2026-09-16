@@ -19,11 +19,78 @@
     recipeHead.insertBefore(th,recipeHead.firstChild);
   }
 
+  const recipePanelHead=document.querySelector('#recipesView .panel-head');
+  if(recipePanelHead && !document.getElementById('recipeSort')){
+    const addButton=document.getElementById('addRecipeBtn');
+    const controls=document.createElement('div');
+    controls.style.display='flex';
+    controls.style.gap='10px';
+    controls.style.alignItems='center';
+    controls.style.flexWrap='wrap';
+    controls.innerHTML=`<select id="recipeSort" style="width:auto;min-width:185px;padding:8px 12px">
+      <option value="code_asc">代号 A → Z</option>
+      <option value="code_desc">代号 Z → A</option>
+      <option value="name_asc">中文菜名 A → Z</option>
+      <option value="name_desc">中文菜名 Z → A</option>
+      <option value="category_asc">分类</option>
+      <option value="price_asc">售价 低 → 高</option>
+      <option value="price_desc">售价 高 → 低</option>
+      <option value="cost_asc">成本 低 → 高</option>
+      <option value="cost_desc">成本 高 → 低</option>
+      <option value="foodcost_asc">Food Cost 低 → 高</option>
+      <option value="foodcost_desc">Food Cost 高 → 低</option>
+    </select>`;
+    if(addButton){
+      recipePanelHead.removeChild(addButton);
+      controls.appendChild(addButton);
+    }
+    recipePanelHead.appendChild(controls);
+    const saved=localStorage.getItem('recipeSort')||'code_asc';
+    document.getElementById('recipeSort').value=saved;
+    document.getElementById('recipeSort').addEventListener('change',e=>{
+      localStorage.setItem('recipeSort',e.target.value);
+      renderRecipes();
+    });
+  }
+
+  function sortedRecipes(){
+    const mode=document.getElementById('recipeSort')?.value||localStorage.getItem('recipeSort')||'code_asc';
+    const list=[...state.recipes];
+    const text=(a,b,dir=1)=>String(a||'').localeCompare(String(b||''),'zh-CN',{numeric:true,sensitivity:'base'})*dir;
+    const num=(a,b,dir=1)=>(Number(a||0)-Number(b||0))*dir;
+    list.sort((a,b)=>{
+      if(mode.startsWith('code_')){
+        const ac=String(a.code||'').trim(),bc=String(b.code||'').trim();
+        if(!ac&&bc)return 1;
+        if(ac&&!bc)return -1;
+        if(!ac&&!bc)return text(a.name_cn,b.name_cn,1);
+        return text(ac,bc,mode==='code_desc'?-1:1);
+      }
+      if(mode==='name_asc')return text(a.name_cn,b.name_cn,1);
+      if(mode==='name_desc')return text(a.name_cn,b.name_cn,-1);
+      if(mode==='category_asc'){
+        const ac=state.categories.find(x=>x.id===a.category_id)?.name||'';
+        const bc=state.categories.find(x=>x.id===b.category_id)?.name||'';
+        return text(ac,bc,1)||text(a.name_cn,b.name_cn,1);
+      }
+      const ca=costingFor(a),cb=costingFor(b);
+      if(mode==='price_asc')return num(a.selling_price,b.selling_price,1);
+      if(mode==='price_desc')return num(a.selling_price,b.selling_price,-1);
+      if(mode==='cost_asc')return num(ca.per,cb.per,1);
+      if(mode==='cost_desc')return num(ca.per,cb.per,-1);
+      if(mode==='foodcost_asc')return num(ca.fc,cb.fc,1);
+      if(mode==='foodcost_desc')return num(ca.fc,cb.fc,-1);
+      return text(a.name_cn,b.name_cn,1);
+    });
+    return list;
+  }
+
   const oldRenderRecipes=renderRecipes;
   renderRecipes=function(){
     const rows=document.getElementById('recipeRows');
     if(!rows)return oldRenderRecipes();
-    rows.innerHTML=state.recipes.length?state.recipes.map(r=>{
+    const recipes=sortedRecipes();
+    rows.innerHTML=recipes.length?recipes.map(r=>{
       const c=costingFor(r),cat=state.categories.find(x=>x.id===r.category_id)?.name||'';
       return `<tr><td><strong>${esc(r.code||'-')}</strong></td><td><strong>${esc(r.name_cn)}</strong><br><span class="muted">${esc(r.name_en)}</span></td><td>${esc(cat)}</td><td>${money(r.selling_price)}</td><td>${money(c.per)}</td><td class="${c.fc<=Number(r.target_food_cost_percent||30)?'good':'warn'}">${pct(c.fc)}</td><td>${money(c.gp)}<br><span class="muted">${pct(c.margin)}</span></td><td><div class="action-row"><button class="mini-btn" onclick="openCosting('${r.id}')">配料</button><button class="mini-btn" onclick="editRecipe('${r.id}')">编辑</button><button class="mini-btn danger-btn" onclick="deleteRecipe('${r.id}')">删除</button></div></td></tr>`;
     }).join(''):'<tr><td colspan="8">还没有食谱</td></tr>';
