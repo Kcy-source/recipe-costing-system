@@ -30,6 +30,73 @@
   let sortKey=localStorage.getItem('recipeSortKey')||'code';
   let sortDir=localStorage.getItem('recipeSortDir')||'asc';
 
+  function ensureResizeStyle(){
+    if(document.getElementById('recipeResizeStyle'))return;
+    const style=document.createElement('style');
+    style.id='recipeResizeStyle';
+    style.textContent=`
+      #recipesView table{table-layout:fixed;width:100%;min-width:900px}
+      #recipesView thead th{position:relative;overflow:visible;white-space:nowrap}
+      #recipesView .recipe-col-resizer{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;z-index:5;touch-action:none}
+      #recipesView .recipe-col-resizer::after{content:'';position:absolute;right:3px;top:20%;width:1px;height:60%;background:#d6dbe3;opacity:0}
+      #recipesView thead th:hover .recipe-col-resizer::after,#recipesView .recipe-col-resizer.active::after{opacity:1}
+      body.recipe-resizing{cursor:col-resize!important;user-select:none!important}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function applySavedWidths(){
+    if(!recipeHead)return;
+    const ths=[...recipeHead.querySelectorAll('th')];
+    ths.forEach((th,i)=>{
+      const saved=Number(localStorage.getItem(`recipeColWidth_${i}`));
+      if(saved>=60){
+        th.style.width=`${saved}px`;
+        th.style.minWidth=`${saved}px`;
+        th.style.maxWidth=`${saved}px`;
+      }
+    });
+  }
+
+  function ensureResizers(){
+    if(!recipeHead)return;
+    ensureResizeStyle();
+    const ths=[...recipeHead.querySelectorAll('th')];
+    ths.forEach((th,index)=>{
+      if(th.querySelector('.recipe-col-resizer'))return;
+      const handle=document.createElement('span');
+      handle.className='recipe-col-resizer';
+      handle.title='拖动调整列宽';
+      handle.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();});
+      handle.addEventListener('mousedown',e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const startX=e.clientX;
+        const startWidth=th.getBoundingClientRect().width;
+        handle.classList.add('active');
+        document.body.classList.add('recipe-resizing');
+        const onMove=ev=>{
+          const width=Math.max(60,Math.round(startWidth+(ev.clientX-startX)));
+          th.style.width=`${width}px`;
+          th.style.minWidth=`${width}px`;
+          th.style.maxWidth=`${width}px`;
+        };
+        const onUp=()=>{
+          handle.classList.remove('active');
+          document.body.classList.remove('recipe-resizing');
+          const width=Math.round(th.getBoundingClientRect().width);
+          localStorage.setItem(`recipeColWidth_${index}`,String(width));
+          document.removeEventListener('mousemove',onMove);
+          document.removeEventListener('mouseup',onUp);
+        };
+        document.addEventListener('mousemove',onMove);
+        document.addEventListener('mouseup',onUp);
+      });
+      th.appendChild(handle);
+    });
+    applySavedWidths();
+  }
+
   function setupHeaders(){
     if(!recipeHead)return;
     const ths=[...recipeHead.querySelectorAll('th')];
@@ -39,7 +106,8 @@
       th.dataset.sortKey=cfg.key;
       th.style.cursor='pointer';
       th.style.userSelect='none';
-      th.onclick=()=>{
+      th.onclick=e=>{
+        if(e.target.closest('.recipe-col-resizer'))return;
         if(sortKey===cfg.key) sortDir=sortDir==='asc'?'desc':'asc';
         else { sortKey=cfg.key; sortDir='asc'; }
         localStorage.setItem('recipeSortKey',sortKey);
@@ -60,6 +128,7 @@
       th.textContent=cfg.label+arrow;
       th.style.fontWeight=sortKey===cfg.key?'700':'';
     });
+    ensureResizers();
   }
 
   function sortedRecipes(){
@@ -100,6 +169,7 @@
       const c=costingFor(r),cat=state.categories.find(x=>x.id===r.category_id)?.name||'';
       return `<tr><td><strong>${esc(r.code||'-')}</strong></td><td><strong>${esc(r.name_cn)}</strong><br><span class="muted">${esc(r.name_en)}</span></td><td>${esc(cat)}</td><td>${money(r.selling_price)}</td><td>${money(c.per)}</td><td class="${c.fc<=Number(r.target_food_cost_percent||30)?'good':'warn'}">${pct(c.fc)}</td><td>${money(c.gp)}<br><span class="muted">${pct(c.margin)}</span></td><td><div class="action-row"><button class="mini-btn" onclick="openCosting('${r.id}')">配料</button><button class="mini-btn" onclick="editRecipe('${r.id}')">编辑</button><button class="mini-btn danger-btn" onclick="deleteRecipe('${r.id}')">删除</button></div></td></tr>`;
     }).join(''):'<tr><td colspan="8">还没有食谱</td></tr>';
+    ensureResizers();
   };
 
   const oldResetRecipeForm=resetRecipeForm;
@@ -158,5 +228,6 @@
   },true);
 
   setupHeaders();
+  ensureResizers();
   renderRecipes();
 })();
