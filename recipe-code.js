@@ -14,73 +14,79 @@
   const recipeHead=recipeTable?.querySelector('thead tr');
   if(recipeHead && !recipeHead.querySelector('[data-recipe-code-head]')){
     const th=document.createElement('th');
-    th.textContent='代号';
     th.setAttribute('data-recipe-code-head','1');
     recipeHead.insertBefore(th,recipeHead.firstChild);
   }
 
-  const recipePanelHead=document.querySelector('#recipesView .panel-head');
-  if(recipePanelHead && !document.getElementById('recipeSort')){
-    const addButton=document.getElementById('addRecipeBtn');
-    const controls=document.createElement('div');
-    controls.style.display='flex';
-    controls.style.gap='10px';
-    controls.style.alignItems='center';
-    controls.style.flexWrap='wrap';
-    controls.innerHTML=`<select id="recipeSort" style="width:auto;min-width:185px;padding:8px 12px">
-      <option value="code_asc">代号 A → Z</option>
-      <option value="code_desc">代号 Z → A</option>
-      <option value="name_asc">中文菜名 A → Z</option>
-      <option value="name_desc">中文菜名 Z → A</option>
-      <option value="category_asc">分类</option>
-      <option value="price_asc">售价 低 → 高</option>
-      <option value="price_desc">售价 高 → 低</option>
-      <option value="cost_asc">成本 低 → 高</option>
-      <option value="cost_desc">成本 高 → 低</option>
-      <option value="foodcost_asc">Food Cost 低 → 高</option>
-      <option value="foodcost_desc">Food Cost 高 → 低</option>
-    </select>`;
-    if(addButton){
-      recipePanelHead.removeChild(addButton);
-      controls.appendChild(addButton);
-    }
-    recipePanelHead.appendChild(controls);
-    const saved=localStorage.getItem('recipeSort')||'code_asc';
-    document.getElementById('recipeSort').value=saved;
-    document.getElementById('recipeSort').addEventListener('change',e=>{
-      localStorage.setItem('recipeSort',e.target.value);
-      renderRecipes();
+  const sortable=[
+    {key:'code',label:'代号'},
+    {key:'name',label:'菜品'},
+    {key:'category',label:'分类'},
+    {key:'price',label:'售价'},
+    {key:'cost',label:'成本/份'},
+    {key:'foodcost',label:'Food Cost'},
+    {key:'margin',label:'毛利'}
+  ];
+  let sortKey=localStorage.getItem('recipeSortKey')||'code';
+  let sortDir=localStorage.getItem('recipeSortDir')||'asc';
+
+  function setupHeaders(){
+    if(!recipeHead)return;
+    const ths=[...recipeHead.querySelectorAll('th')];
+    sortable.forEach((cfg,i)=>{
+      const th=ths[i];
+      if(!th)return;
+      th.dataset.sortKey=cfg.key;
+      th.style.cursor='pointer';
+      th.style.userSelect='none';
+      th.onclick=()=>{
+        if(sortKey===cfg.key) sortDir=sortDir==='asc'?'desc':'asc';
+        else { sortKey=cfg.key; sortDir='asc'; }
+        localStorage.setItem('recipeSortKey',sortKey);
+        localStorage.setItem('recipeSortDir',sortDir);
+        updateHeaderLabels();
+        renderRecipes();
+      };
+    });
+    updateHeaderLabels();
+  }
+
+  function updateHeaderLabels(){
+    if(!recipeHead)return;
+    sortable.forEach(cfg=>{
+      const th=recipeHead.querySelector(`th[data-sort-key="${cfg.key}"]`);
+      if(!th)return;
+      const arrow=sortKey===cfg.key?(sortDir==='asc'?' ↑':' ↓'):' ↕';
+      th.textContent=cfg.label+arrow;
+      th.style.fontWeight=sortKey===cfg.key?'700':'';
     });
   }
 
   function sortedRecipes(){
-    const mode=document.getElementById('recipeSort')?.value||localStorage.getItem('recipeSort')||'code_asc';
     const list=[...state.recipes];
-    const text=(a,b,dir=1)=>String(a||'').localeCompare(String(b||''),'zh-CN',{numeric:true,sensitivity:'base'})*dir;
-    const num=(a,b,dir=1)=>(Number(a||0)-Number(b||0))*dir;
+    const text=(a,b)=>String(a||'').localeCompare(String(b||''),'zh-CN',{numeric:true,sensitivity:'base'});
+    const num=(a,b)=>Number(a||0)-Number(b||0);
+    const dir=sortDir==='desc'?-1:1;
     list.sort((a,b)=>{
-      if(mode.startsWith('code_')){
+      let result=0;
+      if(sortKey==='code'){
         const ac=String(a.code||'').trim(),bc=String(b.code||'').trim();
         if(!ac&&bc)return 1;
         if(ac&&!bc)return -1;
-        if(!ac&&!bc)return text(a.name_cn,b.name_cn,1);
-        return text(ac,bc,mode==='code_desc'?-1:1);
-      }
-      if(mode==='name_asc')return text(a.name_cn,b.name_cn,1);
-      if(mode==='name_desc')return text(a.name_cn,b.name_cn,-1);
-      if(mode==='category_asc'){
+        result=text(ac,bc);
+      }else if(sortKey==='name') result=text(a.name_cn,b.name_cn);
+      else if(sortKey==='category'){
         const ac=state.categories.find(x=>x.id===a.category_id)?.name||'';
         const bc=state.categories.find(x=>x.id===b.category_id)?.name||'';
-        return text(ac,bc,1)||text(a.name_cn,b.name_cn,1);
+        result=text(ac,bc)||text(a.name_cn,b.name_cn);
+      }else if(sortKey==='price') result=num(a.selling_price,b.selling_price);
+      else {
+        const ca=costingFor(a),cb=costingFor(b);
+        if(sortKey==='cost') result=num(ca.per,cb.per);
+        else if(sortKey==='foodcost') result=num(ca.fc,cb.fc);
+        else if(sortKey==='margin') result=num(ca.margin,cb.margin);
       }
-      const ca=costingFor(a),cb=costingFor(b);
-      if(mode==='price_asc')return num(a.selling_price,b.selling_price,1);
-      if(mode==='price_desc')return num(a.selling_price,b.selling_price,-1);
-      if(mode==='cost_asc')return num(ca.per,cb.per,1);
-      if(mode==='cost_desc')return num(ca.per,cb.per,-1);
-      if(mode==='foodcost_asc')return num(ca.fc,cb.fc,1);
-      if(mode==='foodcost_desc')return num(ca.fc,cb.fc,-1);
-      return text(a.name_cn,b.name_cn,1);
+      return result*dir;
     });
     return list;
   }
@@ -112,14 +118,12 @@
   form.addEventListener('submit',async e=>{
     e.preventDefault();
     e.stopImmediatePropagation();
-
     const id=document.getElementById('recipeId').value;
     const code=(document.getElementById('recipeCode').value||'').trim().toUpperCase();
     if(code){
       const duplicate=state.recipes.find(r=>String(r.code||'').trim().toUpperCase()===code && String(r.id)!==String(id));
       if(duplicate)return toast(`代号 ${code} 已经被“${duplicate.name_cn}”使用`);
     }
-
     const row={
       code:code||null,
       name_cn:document.getElementById('recipeNameCn').value.trim(),
@@ -133,37 +137,26 @@
       method:document.getElementById('method').value.trim(),
       updated_at:new Date().toISOString()
     };
-
-    let res=id
-      ? await sb.from('recipes').update(row).eq('id',id).select().single()
-      : await sb.from('recipes').insert(row).select().single();
+    let res=id?await sb.from('recipes').update(row).eq('id',id).select().single():await sb.from('recipes').insert(row).select().single();
     if(res.error){
       if(String(res.error.message||'').toLowerCase().includes('recipes_code_unique_idx'))return toast(`代号 ${code} 已存在`);
       return toast(res.error.message);
     }
-
     const recipeId=res.data.id;
     if(id){
       const del=await sb.from('recipe_ingredients').delete().eq('recipe_id',recipeId);
       if(del.error)return toast(del.error.message);
     }
     if(state.draftIngredients.length){
-      const payload=state.draftIngredients.map((x,index)=>({
-        recipe_id:recipeId,
-        ingredient_id:x.ingredient_id,
-        quantity:Number(x.quantity),
-        unit:x.unit,
-        waste_percent:Number(x.waste_percent||0),
-        sort_order:index
-      }));
+      const payload=state.draftIngredients.map((x,index)=>({recipe_id:recipeId,ingredient_id:x.ingredient_id,quantity:Number(x.quantity),unit:x.unit,waste_percent:Number(x.waste_percent||0),sort_order:index}));
       const ins=await sb.from('recipe_ingredients').insert(payload);
       if(ins.error)return toast(ins.error.message);
     }
-
     document.getElementById('recipeDialog').close();
     await loadAll();
     toast('食谱和原材料已保存');
   },true);
 
+  setupHeaders();
   renderRecipes();
 })();
