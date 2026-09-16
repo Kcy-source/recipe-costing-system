@@ -33,8 +33,9 @@ function renderIngredients(){
 
 renderIngredients();
 
-if(!document.querySelector('script[src="recipe-quick-ingredient.js"]')){
-  const quickIngredientScript=document.createElement('script');
-  quickIngredientScript.src='recipe-quick-ingredient.js';
-  document.body.appendChild(quickIngredientScript);
-}
+['recipe-quick-ingredient.js','recipe-code.js'].forEach(src=>{
+  if(document.querySelector(`script[src="${src}"]`))return;
+  const s=document.createElement('script');
+  s.src=src;
+  document.body.appendChild(s);
+});
