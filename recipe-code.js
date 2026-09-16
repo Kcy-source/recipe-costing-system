@@ -69,28 +69,12 @@
       handle.title='拖动调整列宽';
       handle.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();});
       handle.addEventListener('mousedown',e=>{
-        e.preventDefault();
-        e.stopPropagation();
-        const startX=e.clientX;
-        const startWidth=th.getBoundingClientRect().width;
-        handle.classList.add('active');
-        document.body.classList.add('recipe-resizing');
-        const onMove=ev=>{
-          const width=Math.max(60,Math.round(startWidth+(ev.clientX-startX)));
-          th.style.width=`${width}px`;
-          th.style.minWidth=`${width}px`;
-          th.style.maxWidth=`${width}px`;
-        };
-        const onUp=()=>{
-          handle.classList.remove('active');
-          document.body.classList.remove('recipe-resizing');
-          const width=Math.round(th.getBoundingClientRect().width);
-          localStorage.setItem(`recipeColWidth_${index}`,String(width));
-          document.removeEventListener('mousemove',onMove);
-          document.removeEventListener('mouseup',onUp);
-        };
-        document.addEventListener('mousemove',onMove);
-        document.addEventListener('mouseup',onUp);
+        e.preventDefault();e.stopPropagation();
+        const startX=e.clientX,startWidth=th.getBoundingClientRect().width;
+        handle.classList.add('active');document.body.classList.add('recipe-resizing');
+        const onMove=ev=>{const width=Math.max(60,Math.round(startWidth+(ev.clientX-startX)));th.style.width=`${width}px`;th.style.minWidth=`${width}px`;th.style.maxWidth=`${width}px`;};
+        const onUp=()=>{handle.classList.remove('active');document.body.classList.remove('recipe-resizing');localStorage.setItem(`recipeColWidth_${index}`,String(Math.round(th.getBoundingClientRect().width)));document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);};
+        document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
       });
       th.appendChild(handle);
     });
@@ -101,133 +85,51 @@
     if(!recipeHead)return;
     const ths=[...recipeHead.querySelectorAll('th')];
     sortable.forEach((cfg,i)=>{
-      const th=ths[i];
-      if(!th)return;
-      th.dataset.sortKey=cfg.key;
-      th.style.cursor='pointer';
-      th.style.userSelect='none';
-      th.onclick=e=>{
-        if(e.target.closest('.recipe-col-resizer'))return;
-        if(sortKey===cfg.key) sortDir=sortDir==='asc'?'desc':'asc';
-        else { sortKey=cfg.key; sortDir='asc'; }
-        localStorage.setItem('recipeSortKey',sortKey);
-        localStorage.setItem('recipeSortDir',sortDir);
-        updateHeaderLabels();
-        renderRecipes();
-      };
+      const th=ths[i];if(!th)return;
+      th.dataset.sortKey=cfg.key;th.style.cursor='pointer';th.style.userSelect='none';
+      th.onclick=e=>{if(e.target.closest('.recipe-col-resizer'))return;if(sortKey===cfg.key)sortDir=sortDir==='asc'?'desc':'asc';else{sortKey=cfg.key;sortDir='asc';}localStorage.setItem('recipeSortKey',sortKey);localStorage.setItem('recipeSortDir',sortDir);updateHeaderLabels();renderRecipes();};
     });
     updateHeaderLabels();
   }
 
   function updateHeaderLabels(){
     if(!recipeHead)return;
-    sortable.forEach(cfg=>{
-      const th=recipeHead.querySelector(`th[data-sort-key="${cfg.key}"]`);
-      if(!th)return;
-      const arrow=sortKey===cfg.key?(sortDir==='asc'?' ↑':' ↓'):' ↕';
-      th.textContent=cfg.label+arrow;
-      th.style.fontWeight=sortKey===cfg.key?'700':'';
-    });
+    sortable.forEach(cfg=>{const th=recipeHead.querySelector(`th[data-sort-key="${cfg.key}"]`);if(!th)return;const arrow=sortKey===cfg.key?(sortDir==='asc'?' ↑':' ↓'):' ↕';th.textContent=cfg.label+arrow;th.style.fontWeight=sortKey===cfg.key?'700':'';});
     ensureResizers();
   }
 
   function sortedRecipes(){
-    const list=[...state.recipes];
-    const text=(a,b)=>String(a||'').localeCompare(String(b||''),'zh-CN',{numeric:true,sensitivity:'base'});
-    const num=(a,b)=>Number(a||0)-Number(b||0);
-    const dir=sortDir==='desc'?-1:1;
-    list.sort((a,b)=>{
-      let result=0;
-      if(sortKey==='code'){
-        const ac=String(a.code||'').trim(),bc=String(b.code||'').trim();
-        if(!ac&&bc)return 1;
-        if(ac&&!bc)return -1;
-        result=text(ac,bc);
-      }else if(sortKey==='name') result=text(a.name_cn,b.name_cn);
-      else if(sortKey==='category'){
-        const ac=state.categories.find(x=>x.id===a.category_id)?.name||'';
-        const bc=state.categories.find(x=>x.id===b.category_id)?.name||'';
-        result=text(ac,bc)||text(a.name_cn,b.name_cn);
-      }else if(sortKey==='price') result=num(a.selling_price,b.selling_price);
-      else {
-        const ca=costingFor(a),cb=costingFor(b);
-        if(sortKey==='cost') result=num(ca.per,cb.per);
-        else if(sortKey==='foodcost') result=num(ca.fc,cb.fc);
-        else if(sortKey==='margin') result=num(ca.margin,cb.margin);
-      }
-      return result*dir;
-    });
+    const list=[...state.recipes],text=(a,b)=>String(a||'').localeCompare(String(b||''),'zh-CN',{numeric:true,sensitivity:'base'}),num=(a,b)=>Number(a||0)-Number(b||0),dir=sortDir==='desc'?-1:1;
+    list.sort((a,b)=>{let result=0;if(sortKey==='code'){const ac=String(a.code||'').trim(),bc=String(b.code||'').trim();if(!ac&&bc)return 1;if(ac&&!bc)return -1;result=text(ac,bc);}else if(sortKey==='name')result=text(a.name_cn,b.name_cn);else if(sortKey==='category'){const ac=state.categories.find(x=>x.id===a.category_id)?.name||'',bc=state.categories.find(x=>x.id===b.category_id)?.name||'';result=text(ac,bc)||text(a.name_cn,b.name_cn);}else if(sortKey==='price')result=num(a.selling_price,b.selling_price);else{const ca=costingFor(a),cb=costingFor(b);if(sortKey==='cost')result=num(ca.per,cb.per);else if(sortKey==='foodcost')result=num(ca.fc,cb.fc);else if(sortKey==='margin')result=num(ca.margin,cb.margin);}return result*dir;});
     return list;
   }
 
   const oldRenderRecipes=renderRecipes;
   renderRecipes=function(){
-    const rows=document.getElementById('recipeRows');
-    if(!rows)return oldRenderRecipes();
+    const rows=document.getElementById('recipeRows');if(!rows)return oldRenderRecipes();
     const recipes=sortedRecipes();
-    rows.innerHTML=recipes.length?recipes.map(r=>{
-      const c=costingFor(r),cat=state.categories.find(x=>x.id===r.category_id)?.name||'';
-      return `<tr><td><strong>${esc(r.code||'-')}</strong></td><td><strong>${esc(r.name_cn)}</strong><br><span class="muted">${esc(r.name_en)}</span></td><td>${esc(cat)}</td><td>${money(r.selling_price)}</td><td>${money(c.per)}</td><td class="${c.fc<=Number(r.target_food_cost_percent||30)?'good':'warn'}">${pct(c.fc)}</td><td>${money(c.gp)}<br><span class="muted">${pct(c.margin)}</span></td><td><div class="action-row"><button class="mini-btn" onclick="openCosting('${r.id}')">配料</button><button class="mini-btn" onclick="editRecipe('${r.id}')">编辑</button><button class="mini-btn danger-btn" onclick="deleteRecipe('${r.id}')">删除</button></div></td></tr>`;
-    }).join(''):'<tr><td colspan="8">还没有食谱</td></tr>';
+    rows.innerHTML=recipes.length?recipes.map(r=>{const c=costingFor(r),cat=state.categories.find(x=>x.id===r.category_id)?.name||'';return `<tr><td><strong>${esc(r.code||'-')}</strong></td><td><strong>${esc(r.name_cn)}</strong><br><span class="muted">${esc(r.name_en)}</span></td><td>${esc(cat)}</td><td>${money(r.selling_price)}</td><td>${money(c.per)}</td><td class="${c.fc<=Number(r.target_food_cost_percent||30)?'good':'warn'}">${pct(c.fc)}</td><td>${money(c.gp)}<br><span class="muted">${pct(c.margin)}</span></td><td><div class="action-row"><button class="mini-btn" onclick="openCosting('${r.id}')">配料</button><button class="mini-btn" onclick="editRecipe('${r.id}')">编辑</button><button class="mini-btn danger-btn" onclick="deleteRecipe('${r.id}')">删除</button></div></td></tr>`;}).join(''):'<tr><td colspan="8">还没有食谱</td></tr>';
     ensureResizers();
   };
 
   const oldResetRecipeForm=resetRecipeForm;
-  resetRecipeForm=function(){
-    oldResetRecipeForm();
-    if(document.getElementById('recipeCode'))document.getElementById('recipeCode').value='';
-  };
+  resetRecipeForm=function(){oldResetRecipeForm();if(document.getElementById('recipeCode'))document.getElementById('recipeCode').value='';};
 
   const oldEditRecipe=window.editRecipe;
-  window.editRecipe=id=>{
-    const r=state.recipes.find(x=>x.id===id);
-    oldEditRecipe(id);
-    if(r && document.getElementById('recipeCode'))document.getElementById('recipeCode').value=r.code||'';
-  };
+  window.editRecipe=id=>{const r=state.recipes.find(x=>x.id===id);oldEditRecipe(id);if(r&&document.getElementById('recipeCode'))document.getElementById('recipeCode').value=r.code||'';};
 
   form.addEventListener('submit',async e=>{
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    const id=document.getElementById('recipeId').value;
-    const code=(document.getElementById('recipeCode').value||'').trim().toUpperCase();
-    if(code){
-      const duplicate=state.recipes.find(r=>String(r.code||'').trim().toUpperCase()===code && String(r.id)!==String(id));
-      if(duplicate)return toast(`代号 ${code} 已经被“${duplicate.name_cn}”使用`);
-    }
-    const row={
-      code:code||null,
-      name_cn:document.getElementById('recipeNameCn').value.trim(),
-      name_en:document.getElementById('recipeNameEn').value.trim(),
-      category_id:document.getElementById('recipeCategory').value?Number(document.getElementById('recipeCategory').value):null,
-      recipe_yield:Number(document.getElementById('recipeYield').value),
-      yield_unit:document.getElementById('yieldUnit').value.trim()||'份',
-      selling_price:Number(document.getElementById('sellingPrice').value),
-      target_food_cost_percent:Number(document.getElementById('targetFoodCost').value||30),
-      notes:document.getElementById('recipeNotes').value.trim(),
-      method:document.getElementById('method').value.trim(),
-      updated_at:new Date().toISOString()
-    };
+    e.preventDefault();e.stopImmediatePropagation();
+    const id=document.getElementById('recipeId').value,code=(document.getElementById('recipeCode').value||'').trim().toUpperCase();
+    if(code){const duplicate=state.recipes.find(r=>String(r.code||'').trim().toUpperCase()===code&&String(r.id)!==String(id));if(duplicate)return toast(`代号 ${code} 已经被“${duplicate.name_cn}”使用`);}
+    const row={code:code||null,name_cn:document.getElementById('recipeNameCn').value.trim(),name_en:document.getElementById('recipeNameEn').value.trim(),category_id:document.getElementById('recipeCategory').value?Number(document.getElementById('recipeCategory').value):null,recipe_yield:Number(document.getElementById('recipeYield').value),yield_unit:document.getElementById('yieldUnit').value.trim()||'份',selling_price:Number(document.getElementById('sellingPrice').value),target_food_cost_percent:Number(document.getElementById('targetFoodCost').value||30),notes:document.getElementById('recipeNotes').value.trim(),method:document.getElementById('method').value.trim(),updated_at:new Date().toISOString()};
     let res=id?await sb.from('recipes').update(row).eq('id',id).select().single():await sb.from('recipes').insert(row).select().single();
-    if(res.error){
-      if(String(res.error.message||'').toLowerCase().includes('recipes_code_unique_idx'))return toast(`代号 ${code} 已存在`);
-      return toast(res.error.message);
-    }
+    if(res.error){if(String(res.error.message||'').toLowerCase().includes('recipes_code_unique_idx'))return toast(`代号 ${code} 已存在`);return toast(res.error.message);}
     const recipeId=res.data.id;
-    if(id){
-      const del=await sb.from('recipe_ingredients').delete().eq('recipe_id',recipeId);
-      if(del.error)return toast(del.error.message);
-    }
-    if(state.draftIngredients.length){
-      const payload=state.draftIngredients.map((x,index)=>({recipe_id:recipeId,ingredient_id:x.ingredient_id,quantity:Number(x.quantity),unit:x.unit,waste_percent:Number(x.waste_percent||0),sort_order:index}));
-      const ins=await sb.from('recipe_ingredients').insert(payload);
-      if(ins.error)return toast(ins.error.message);
-    }
-    document.getElementById('recipeDialog').close();
-    await loadAll();
-    toast('食谱和原材料已保存');
+    if(id){const del=await sb.from('recipe_ingredients').delete().eq('recipe_id',recipeId);if(del.error)return toast(del.error.message);}
+    if(state.draftIngredients.length){const payload=state.draftIngredients.map((x,index)=>({recipe_id:recipeId,ingredient_id:x.ingredient_id,display_quantity:(x.display_quantity||'').trim()||null,quantity:Number(x.quantity||0),unit:x.unit,waste_percent:Number(x.waste_percent||0),sort_order:index}));const ins=await sb.from('recipe_ingredients').insert(payload);if(ins.error)return toast(ins.error.message);}
+    document.getElementById('recipeDialog').close();await loadAll();toast('食谱和原材料已保存');
   },true);
 
-  setupHeaders();
-  ensureResizers();
-  renderRecipes();
+  setupHeaders();ensureResizers();renderRecipes();
 })();
