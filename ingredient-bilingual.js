@@ -133,9 +133,73 @@
       ||String(i.supplier||'').toLowerCase().includes(q);
   }
 
+  const ingredientSortable=[
+    {key:'name',label:'名称'},
+    {key:'supplier',label:'供应商'},
+    {key:'spec',label:'采购规格'},
+    {key:'price',label:'采购价'},
+    {key:'yield',label:'净料率'},
+    {key:'unitcost',label:'实际单位成本'}
+  ];
+  let ingredientSortKey=localStorage.getItem('ingredientSortKey')||'name';
+  let ingredientSortDir=localStorage.getItem('ingredientSortDir')||'asc';
+
+  function sortedIngredients(list){
+    const dir=ingredientSortDir==='desc'?-1:1;
+    const text=(a,b)=>String(a||'').localeCompare(String(b||''),'zh-CN',{numeric:true,sensitivity:'base'});
+    const num=(a,b)=>Number(a||0)-Number(b||0);
+    return [...list].sort((a,b)=>{
+      let result=0;
+      if(ingredientSortKey==='name')result=text(a.name,b.name);
+      else if(ingredientSortKey==='supplier')result=text(a.supplier,b.supplier);
+      else if(ingredientSortKey==='spec')result=text(String(a.purchase_quantity||'')+' '+String(a.purchase_unit||''),String(b.purchase_quantity||'')+' '+String(b.purchase_unit||''));
+      else if(ingredientSortKey==='price')result=num(netPrice(a),netPrice(b));
+      else if(ingredientSortKey==='yield')result=num(a.yield_percent,b.yield_percent);
+      else if(ingredientSortKey==='unitcost')result=num(unitCost(a),unitCost(b));
+      return result*dir;
+    });
+  }
+
+  function setupIngredientSortHeaders(){
+    const head=document.querySelector('#ingredientsView thead tr');
+    if(!head)return;
+    const ths=[...head.querySelectorAll('th')];
+    ingredientSortable.forEach((cfg,i)=>{
+      const th=ths[i];
+      if(!th)return;
+      th.dataset.sortKey=cfg.key;
+      th.style.cursor='pointer';
+      th.style.userSelect='none';
+      th.onclick=e=>{
+        if(e.target.closest('.ingredient-col-resizer'))return;
+        if(ingredientSortKey===cfg.key)ingredientSortDir=ingredientSortDir==='asc'?'desc':'asc';
+        else{ingredientSortKey=cfg.key;ingredientSortDir='asc';}
+        localStorage.setItem('ingredientSortKey',ingredientSortKey);
+        localStorage.setItem('ingredientSortDir',ingredientSortDir);
+        updateIngredientSortLabels();
+        renderIngredients();
+      };
+    });
+    updateIngredientSortLabels();
+  }
+
+  function updateIngredientSortLabels(){
+    const head=document.querySelector('#ingredientsView thead tr');
+    if(!head)return;
+    ingredientSortable.forEach(cfg=>{
+      const th=head.querySelector('th[data-sort-key="'+cfg.key+'"]');
+      if(!th)return;
+      const arrow=ingredientSortKey===cfg.key?(ingredientSortDir==='asc'?' ↑':' ↓'):' ↕';
+      const handle=th.querySelector('.ingredient-col-resizer');
+      th.textContent=cfg.label+arrow;
+      if(handle)th.appendChild(handle);
+      th.style.fontWeight=ingredientSortKey===cfg.key?'700':'';
+    });
+  }
+
   renderIngredients=function(){
     const q=(document.getElementById('ingredientSearchInput')?.value||'').trim().toLowerCase();
-    const matches=state.ingredients.filter(i=>ingredientMatches(i,q));
+    const matches=sortedIngredients(state.ingredients.filter(i=>ingredientMatches(i,q)));
     const body=document.getElementById('ingredientRows');
     if(!body)return;
 
@@ -245,6 +309,7 @@
   }
 
   updateNetPurchasePrice();
+  setupIngredientSortHeaders();
   renderIngredients();
   ensureResizers();
 
