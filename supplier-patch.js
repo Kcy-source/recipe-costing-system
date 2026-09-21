@@ -31,10 +31,3 @@ function renderIngredients(){
 })();
 
 renderIngredients();
-
-['recipe-quick-ingredient.js','recipe-code.js','category-fix.js','ingredient-bilingual.js'].forEach(src=>{
-  if(document.querySelector(`script[src="${src}"]`))return;
-  const s=document.createElement('script');
-  s.src=src;
-  document.body.appendChild(s);
-});
