@@ -78,7 +78,6 @@
     const row={
       name:document.getElementById('ingredientName').value.trim(),
       name_en:document.getElementById('ingredientNameEn').value.trim(),
-      category:document.getElementById('ingredientCategory').value.trim()||'其他',
       purchase_quantity:Number(document.getElementById('purchaseQuantity').value),
       purchase_unit:document.getElementById('purchaseUnit').value.trim(),
       purchase_price:Number(document.getElementById('purchasePrice').value),
@@ -104,8 +103,7 @@
       if(!q)return true;
       return String(i.name||'').toLowerCase().includes(q)
         || String(i.name_en||'').toLowerCase().includes(q)
-        || String(i.supplier||'').toLowerCase().includes(q)
-        || String(i.category||'').toLowerCase().includes(q);
+        || String(i.supplier||'').toLowerCase().includes(q);
     });
     document.getElementById('ingredientRows').innerHTML=matches.length
       ? matches.map(i=>{
@@ -114,13 +112,13 @@
           const net=gst>0?gross/(1+gst/100):gross;
           return '<tr><td><strong>'+esc(i.name)+'</strong>'
             +(i.name_en?'<br><span class="muted">'+esc(i.name_en)+'</span>':'')
-            +'</td><td>'+esc(i.category||'-')+'</td><td>'+esc(i.supplier||'-')+'</td><td>'
+            +'</td><td>'+esc(i.supplier||'-')+'</td><td>'
             +Number(i.purchase_quantity)+' '+esc(i.purchase_unit)+'</td><td>'
             +money(net)+'<br><span class="muted">GST '+pct(gst)+' · 含 GST '+money(gross)+'</span></td><td>'
             +pct(i.yield_percent)+'</td><td>'+money(unitCost(i))+'/'+esc(i.base_unit)
             +'</td><td><div class="action-row"><button class="mini-btn" onclick="editIngredient(\''+i.id+'\')">编辑</button><button class="mini-btn danger-btn" onclick="deleteIngredient(\''+i.id+'\')">删除</button></div></td></tr>';
         }).join('')
-      : '<tr><td colspan="8" class="muted">找不到符合“'+esc(q)+'”的原材料、供应商或分类</td></tr>';
+      : '<tr><td colspan="7" class="muted">找不到符合“'+esc(q)+'”的原材料或供应商</td></tr>';
   };
 
 
@@ -193,7 +191,7 @@
 
   const search=document.getElementById('ingredientSearchInput');
   if(search){
-    search.placeholder='搜索中英文原材料名、供应商或分类';
+    search.placeholder='搜索中英文原材料名或供应商';
     search.oninput=renderIngredients;
   }
 
