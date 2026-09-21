@@ -18,9 +18,13 @@
   };
 
   function currentNetPurchasePrice(){
-    const gross=Number(document.getElementById('purchasePrice')?.value||0);
+    return Number(document.getElementById('purchasePrice')?.value||0);
+  }
+
+  function currentGrossPurchasePrice(){
+    const net=currentNetPurchasePrice();
     const gst=Number(document.getElementById('gstPercent')?.value||0);
-    return gst>0?gross/(1+gst/100):gross;
+    return net*(1+gst/100);
   }
 
   const nameInput=document.getElementById('ingredientName');
@@ -38,7 +42,7 @@
   const purchasePriceInput=document.getElementById('purchasePrice');
   if(purchasePriceInput){
     const label=purchasePriceInput.closest('label');
-    if(label)label.childNodes[0].textContent='采购价（含 GST）$ ';
+    if(label)label.childNodes[0].textContent='净采购价（未含 GST）$ ';
     const row=purchasePriceInput.closest('.grid3');
     if(row&&!document.getElementById('gstPercent')){
       row.className='grid4';
@@ -55,7 +59,7 @@
 
   function updateNetPurchasePrice(){
     const box=document.getElementById('netPurchasePriceBox');
-    if(box)box.textContent='未含 GST 净采购价：'+money(currentNetPurchasePrice());
+    if(box)box.textContent='含 GST 采购价：'+money(currentGrossPurchasePrice());
   }
 
   document.getElementById('purchasePrice')?.addEventListener('input',updateNetPurchasePrice);
@@ -71,6 +75,9 @@
     }
     if(document.getElementById('gstPercent')){
       document.getElementById('gstPercent').value=Number(item.gst_percent||0);
+    }
+    if(document.getElementById('purchasePrice')){
+      document.getElementById('purchasePrice').value=Number(netPrice(item).toFixed(2));
     }
     updateNetPurchasePrice();
   };
@@ -97,7 +104,7 @@
       name_en:document.getElementById('ingredientNameEn')?.value.trim()||'',
       purchase_quantity:Number(document.getElementById('purchaseQuantity').value),
       purchase_unit:document.getElementById('purchaseUnit').value.trim(),
-      purchase_price:Number(document.getElementById('purchasePrice').value),
+      purchase_price:currentGrossPurchasePrice(),
       gst_percent:Number(document.getElementById('gstPercent')?.value||0),
       base_unit:document.getElementById('baseUnit').value.trim(),
       base_quantity:Number(document.getElementById('baseQuantity').value),
