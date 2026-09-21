@@ -107,14 +107,22 @@
       updated_at:new Date().toISOString()
     };
 
-    const result=id
-      ? await sb.from('ingredients').update(row).eq('id',id)
-      : await sb.from('ingredients').insert(row);
+    let result;
+    if(id){
+      result=await sb.from('ingredients').update(row).eq('id',id);
+    }else{
+      const existing=state.ingredients.find(i=>String(i.name||'').trim().toLowerCase()===row.name.toLowerCase());
+      if(existing){
+        result=await sb.from('ingredients').update(row).eq('id',existing.id);
+      }else{
+        result=await sb.from('ingredients').insert(row);
+      }
+    }
 
     if(result.error)return toast(result.error.message);
 
     document.getElementById('ingredientDialog').close();
-    toast('原材料已保存');
+    toast(id?'原材料已保存':'原材料已保存；同名资料会自动更新');
     await loadAll();
   },true);
 
