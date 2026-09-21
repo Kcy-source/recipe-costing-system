@@ -116,7 +116,7 @@
             +(i.name_en?'<br><span class="muted">'+esc(i.name_en)+'</span>':'')
             +'</td><td>'+esc(i.category||'-')+'</td><td>'+esc(i.supplier||'-')+'</td><td>'
             +Number(i.purchase_quantity)+' '+esc(i.purchase_unit)+'</td><td>'
-            +money(gross)+'<br><span class="muted">GST '+pct(gst)+' · 净 '+money(net)+'</span></td><td>'
+            +money(net)+'<br><span class="muted">GST '+pct(gst)+' · 含 GST '+money(gross)+'</span></td><td>'
             +pct(i.yield_percent)+'</td><td>'+money(unitCost(i))+'/'+esc(i.base_unit)
             +'</td><td><div class="action-row"><button class="mini-btn" onclick="editIngredient(\''+i.id+'\')">编辑</button><button class="mini-btn danger-btn" onclick="deleteIngredient(\''+i.id+'\')">删除</button></div></td></tr>';
         }).join('')
