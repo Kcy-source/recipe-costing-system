@@ -123,6 +123,74 @@
       : '<tr><td colspan="8" class="muted">找不到符合“'+esc(q)+'”的原材料、供应商或分类</td></tr>';
   };
 
+
+  function ensureIngredientResizeStyle(){
+    if(document.getElementById('ingredientResizeStyle'))return;
+    const style=document.createElement('style');
+    style.id='ingredientResizeStyle';
+    style.textContent=`
+      #ingredientsView table{table-layout:fixed;width:100%;min-width:980px}
+      #ingredientsView thead th{position:relative;overflow:visible;white-space:nowrap}
+      #ingredientsView .ingredient-col-resizer{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;z-index:5;touch-action:none}
+      #ingredientsView .ingredient-col-resizer::after{content:'';position:absolute;right:3px;top:20%;width:1px;height:60%;background:#d6dbe3;opacity:0}
+      #ingredientsView thead th:hover .ingredient-col-resizer::after,#ingredientsView .ingredient-col-resizer.active::after{opacity:1}
+      body.ingredient-resizing{cursor:col-resize!important;user-select:none!important}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function applyIngredientSavedWidths(){
+    const head=document.querySelector('#ingredientsView thead tr');
+    if(!head)return;
+    [...head.querySelectorAll('th')].forEach((th,i)=>{
+      const saved=Number(localStorage.getItem('ingredientColWidth_'+i));
+      if(saved>=60){
+        th.style.width=saved+'px';
+        th.style.minWidth=saved+'px';
+        th.style.maxWidth=saved+'px';
+      }
+    });
+  }
+
+  function ensureIngredientResizers(){
+    const head=document.querySelector('#ingredientsView thead tr');
+    if(!head)return;
+    ensureIngredientResizeStyle();
+    [...head.querySelectorAll('th')].forEach((th,index)=>{
+      if(th.querySelector('.ingredient-col-resizer'))return;
+      const handle=document.createElement('span');
+      handle.className='ingredient-col-resizer';
+      handle.title='拖动调整列宽';
+      handle.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();});
+      handle.addEventListener('mousedown',e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const startX=e.clientX;
+        const startWidth=th.getBoundingClientRect().width;
+        handle.classList.add('active');
+        document.body.classList.add('ingredient-resizing');
+        const onMove=ev=>{
+          const width=Math.max(60,Math.round(startWidth+(ev.clientX-startX)));
+          th.style.width=width+'px';
+          th.style.minWidth=width+'px';
+          th.style.maxWidth=width+'px';
+        };
+        const onUp=()=>{
+          handle.classList.remove('active');
+          document.body.classList.remove('ingredient-resizing');
+          const width=Math.round(th.getBoundingClientRect().width);
+          localStorage.setItem('ingredientColWidth_'+index,String(width));
+          document.removeEventListener('mousemove',onMove);
+          document.removeEventListener('mouseup',onUp);
+        };
+        document.addEventListener('mousemove',onMove);
+        document.addEventListener('mouseup',onUp);
+      });
+      th.appendChild(handle);
+    });
+    applyIngredientSavedWidths();
+  }
+
   const search=document.getElementById('ingredientSearchInput');
   if(search){
     search.placeholder='搜索中英文原材料名、供应商或分类';
@@ -131,6 +199,7 @@
 
   updateNetPurchasePrice();
   renderIngredients();
+  ensureIngredientResizers();
   if(typeof renderRecipes==='function')renderRecipes();
   if(typeof renderDashboard==='function')renderDashboard();
 })();
