@@ -48,6 +48,13 @@ function sortDashboardRecipes(list){
       const ac=state.categories.find(x=>x.id===a.category_id)?.name||'';
       const bc=state.categories.find(x=>x.id===b.category_id)?.name||'';
       result=textCompare(ac,bc)||textCompare(a.name_cn,b.name_cn);
+    }else if(dashboardSortKey==='price'){
+      result=Number(a.selling_price||0)-Number(b.selling_price||0);
+    }else{
+      const ca=costingFor(a),cb=costingFor(b);
+      if(dashboardSortKey==='cost')result=ca.per-cb.per;
+      else if(dashboardSortKey==='foodcost')result=ca.fc-cb.fc;
+      else if(dashboardSortKey==='margin')result=ca.margin-cb.margin;
     }
     return result*dir;
   });
@@ -59,7 +66,11 @@ function updateDashboardSortHeaders(){
   const configs=[
     {key:'code',label:'代号',index:0},
     {key:'name',label:'菜品',index:1},
-    {key:'category',label:'分类',index:2}
+    {key:'category',label:'分类',index:2},
+    {key:'price',label:'售价',index:3},
+    {key:'cost',label:'成本/份',index:4},
+    {key:'foodcost',label:'Food Cost',index:5},
+    {key:'margin',label:'毛利',index:6}
   ];
   const ths=[...head.querySelectorAll('th')];
   configs.forEach(cfg=>{
@@ -82,7 +93,11 @@ function setupDashboardSorting(){
   const configs=[
     {key:'code',index:0},
     {key:'name',index:1},
-    {key:'category',index:2}
+    {key:'category',index:2},
+    {key:'price',index:3},
+    {key:'cost',index:4},
+    {key:'foodcost',index:5},
+    {key:'margin',index:6}
   ];
   configs.forEach(cfg=>{
     const th=ths[cfg.index];
