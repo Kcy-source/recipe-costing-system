@@ -13,3 +13,10 @@
   background:#fafbfc;
   box-shadow:0 1px 0 #e5e7eb;
 }
+
+.topbar-actions{display:flex;align-items:center;gap:14px}
+.top-user-box{display:flex;align-items:center;gap:10px;color:#4b5563;font-size:12px}
+.top-user-box .text-btn{color:#b42318;text-align:right}
+@media(max-width:850px){
+  .top-user-box{display:flex}
+}
