@@ -118,7 +118,7 @@
     wrap.style.padding='16px 20px 8px';
     wrap.innerHTML='<input id="recipeSearchInput" type="search" placeholder="搜索菜品名称或代号，例如：百花酿皮蛋 / Century Egg / A01" style="width:100%;font-size:16px;padding:13px 14px" />';
     panel.insertBefore(wrap,tableWrap);
-    document.getElementById('recipeSearchInput').addEventListener('input',renderRecipes);
+    document.getElementById('recipeSearchInput').addEventListener('input',()=>renderRecipes());
   })();
 
   const oldRenderRecipes=renderRecipes;
