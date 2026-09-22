@@ -20,7 +20,24 @@ async function showApp(user){$('authView').classList.add('hidden');$('appView').
 $('authForm').addEventListener('submit',async e=>{e.preventDefault();const email=$('email').value.trim(),password=$('password').value;const{error}=await sb.auth.signInWithPassword({email,password});if(error)toast(error.message);});
 $('signupBtn').onclick=async()=>{const email=$('email').value.trim(),password=$('password').value;if(!email||password.length<6)return toast('请输入邮箱和至少 6 位密码');const{error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:'https://kcy-source.github.io/recipe-costing-system/'}});toast(error?error.message:'注册成功，请检查邮箱确认后登录');};
 $('logoutBtn').onclick=()=>sb.auth.signOut();
-$('refreshBtn').onclick=()=>loadAll();$('dashboardSearchInput')?.addEventListener('input',renderDashboard);
+$('refreshBtn').onclick=async()=>{
+  const btn=$('refreshBtn');
+  if(btn.disabled)return;
+  const oldText=btn.textContent;
+  btn.disabled=true;
+  btn.textContent='刷新中...';
+  try{
+    await loadAll();
+    toast('资料已刷新');
+  }catch(err){
+    console.error(err);
+    toast('刷新失败，请再试一次');
+  }finally{
+    btn.disabled=false;
+    btn.textContent=oldText;
+  }
+};
+$('dashboardSearchInput')?.addEventListener('input',renderDashboard);
 
 document.querySelectorAll('.nav-btn').forEach(b=>b.onclick=()=>switchView(b.dataset.view));
 function switchView(name){document.querySelectorAll('.nav-btn').forEach(x=>x.classList.toggle('active',x.dataset.view===name));document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));$(name+'View').classList.remove('hidden');const map={dashboard:['总览','查看食谱与成本概况'],ingredients:['原材料','管理采购价、规格与净料率'],recipes:['食谱 / Costing','建立菜品食谱并自动计算成本']};$('pageTitle').textContent=map[name][0];$('pageSubtitle').textContent=map[name][1];}
