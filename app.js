@@ -40,7 +40,7 @@ $('refreshBtn').onclick=async()=>{
 $('dashboardSearchInput')?.addEventListener('input',renderDashboard);
 
 document.querySelectorAll('.nav-btn').forEach(b=>b.onclick=()=>switchView(b.dataset.view));
-function switchView(name){document.querySelectorAll('.nav-btn').forEach(x=>x.classList.toggle('active',x.dataset.view===name));document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));$(name+'View').classList.remove('hidden');const map={dashboard:['总览','查看食谱与成本概况'],ingredients:['原材料','管理采购价、规格与净料率'],recipes:['食谱 / Costing','建立菜品食谱并自动计算成本']};$('pageTitle').textContent=map[name][0];$('pageSubtitle').textContent=map[name][1];}
+function switchView(name){document.querySelectorAll('.nav-btn').forEach(x=>x.classList.toggle('active',x.dataset.view===name));document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));$(name+'View').classList.remove('hidden');const map={dashboard:['总览','查看食谱与成本概况'],ingredients:['原材料','管理采购价、规格与净料率'],recipes:['食谱 / Costing','建立菜品食谱并自动计算成本'],management:['管理设置','管理系统登录账号']};$('pageTitle').textContent=map[name][0];$('pageSubtitle').textContent=map[name][1];}
 
 async function loadAll(){const [a,b,c,d]=await Promise.all([sb.from('ingredients').select('*').order('name'),sb.from('recipes').select('*').order('name_cn'),sb.from('recipe_categories').select('*').order('sort_order'),sb.from('recipe_ingredients').select('*').order('sort_order')]);const err=a.error||b.error||c.error||d.error;if(err)return toast(err.message);state.ingredients=a.data||[];state.recipes=b.data||[];state.categories=c.data||[];state.recipeIngredients=d.data||[];renderAll();}
 function renderAll(){renderIngredients();renderRecipes();renderDashboard();fillSelectors();}
