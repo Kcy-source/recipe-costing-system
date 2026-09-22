@@ -36,7 +36,7 @@
     style.id='recipeResizeStyle';
     style.textContent=`
       #recipesView table{table-layout:fixed;width:100%;min-width:900px}
-      #recipesView thead th{position:relative;overflow:visible;white-space:nowrap}
+      #recipesView .table-wrap{max-height:calc(100vh - 250px);overflow:auto}#recipesView thead th{position:sticky;top:0;z-index:20;overflow:visible;white-space:nowrap;background:#fafbfc;box-shadow:0 1px 0 #e5e7eb}
       #recipesView .recipe-col-resizer{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;z-index:5;touch-action:none}
       #recipesView .recipe-col-resizer::after{content:'';position:absolute;right:3px;top:20%;width:1px;height:60%;background:#d6dbe3;opacity:0}
       #recipesView thead th:hover .recipe-col-resizer::after,#recipesView .recipe-col-resizer.active::after{opacity:1}
