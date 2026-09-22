@@ -25,3 +25,16 @@
 #dashboardSearchInput{font-size:16px;padding:13px 14px}
 #dashboardView .table-wrap{max-height:calc(100vh - 330px);overflow:auto}
 #dashboardView thead th{position:sticky;top:0;z-index:20;background:#fafbfc;box-shadow:0 1px 0 #e5e7eb}
+
+.dashboard-recipe-link{
+  border:0;
+  background:transparent;
+  padding:0;
+  text-align:left;
+  cursor:pointer;
+  color:inherit;
+}
+.dashboard-recipe-link:hover strong{
+  text-decoration:underline;
+  color:#7b1e1e;
+}
