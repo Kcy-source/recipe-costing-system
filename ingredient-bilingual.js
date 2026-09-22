@@ -239,7 +239,7 @@
     style.id='ingredientResizeStyle';
     style.textContent=
       '#ingredientsView table{table-layout:fixed;width:100%;min-width:980px}'
-      +'#ingredientsView thead th{position:relative;overflow:visible;white-space:nowrap}'
+      +'#ingredientsView thead th{position:sticky;top:0;z-index:20;overflow:visible;white-space:nowrap;background:#fafbfc;box-shadow:0 1px 0 #e5e7eb}'
       +'#ingredientsView .ingredient-col-resizer{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;z-index:5;touch-action:none}'
       +'#ingredientsView .ingredient-col-resizer::after{content:"";position:absolute;right:3px;top:20%;width:1px;height:60%;background:#d6dbe3;opacity:0}'
       +'#ingredientsView thead th:hover .ingredient-col-resizer::after,#ingredientsView .ingredient-col-resizer.active::after{opacity:1}'
