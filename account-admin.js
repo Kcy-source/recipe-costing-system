@@ -80,20 +80,34 @@
     if(!isAdmin)return;
 
     const email=document.getElementById('accountEmail').value.trim().toLowerCase();
+    const password=document.getElementById('accountPassword').value;
     const role=document.getElementById('accountRole').value;
     if(!email)return toast('请输入邮箱');
+    if(password.length<6)return toast('密码至少 6 位');
 
-    const {error}=await sb.from('app_accounts').upsert(
-      {email,role,is_active:true},
-      {onConflict:'email'}
-    );
+    const button=form.querySelector('button[type="submit"]');
+    const oldText=button?.textContent||'+ 建立账号';
+    if(button){button.disabled=true;button.textContent='建立中...';}
 
-    if(error)return toast(error.message);
+    try{
+      const {data,error}=await sb.functions.invoke('admin-create-user',{
+        body:{email,password,role}
+      });
 
-    document.getElementById('accountEmail').value='';
-    document.getElementById('accountRole').value='user';
-    toast('账号已加入，可以让对方注册了');
-    await loadAccounts();
+      if(error)throw error;
+      if(data?.error)throw new Error(data.error);
+
+      document.getElementById('accountEmail').value='';
+      document.getElementById('accountPassword').value='';
+      document.getElementById('accountRole').value='user';
+      toast('账号已建立，可直接登录');
+      await loadAccounts();
+    }catch(err){
+      console.error(err);
+      toast(err?.message||'建立账号失败');
+    }finally{
+      if(button){button.disabled=false;button.textContent=oldText;}
+    }
   });
 
   nav.addEventListener('click',()=>{ if(isAdmin)loadAccounts(); });
