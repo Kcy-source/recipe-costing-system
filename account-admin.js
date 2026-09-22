@@ -28,7 +28,7 @@
 
   async function loadAccounts(){
     if(!isAdmin)return;
-    rows.innerHTML='<tr><td colspan="4" class="muted">正在读取账号...</td></tr>';
+    rows.innerHTML='<tr><td colspan="5" class="muted">正在读取账号...</td></tr>';
 
     const {data,error}=await sb.from('app_accounts')
       .select('id,email,role,is_active,created_at')
@@ -36,7 +36,7 @@
 
     if(error){
       console.error(error);
-      rows.innerHTML='<tr><td colspan="4" class="warn">账号资料读取失败</td></tr>';
+      rows.innerHTML='<tr><td colspan="5" class="warn">账号资料读取失败</td></tr>';
       toast(error.message);
       return;
     }
@@ -61,9 +61,34 @@
           </select>
         </td>
         <td>${esc(created)}</td>
+        <td>${own
+          ? '<span class="muted">当前账号</span>'
+          : `<button type="button" class="mini-btn danger-btn" onclick="deleteManagedAccount('${a.id}','${encodeURIComponent(email)}')">删除账号</button>`
+        }</td>
       </tr>`;
-    }).join(''):'<tr><td colspan="4" class="muted">还没有账号</td></tr>';
+    }).join(''):'<tr><td colspan="5" class="muted">还没有账号</td></tr>';
   }
+
+  window.deleteManagedAccount=async(id,encodedEmail)=>{
+    if(!isAdmin)return;
+    const email=decodeURIComponent(encodedEmail||'');
+    if(!email)return;
+    if(email.toLowerCase()===currentEmail)return toast('不能删除当前账号');
+    if(!confirm(`确定删除账号 ${email}？删除后这个人将不能再登录系统。`))return;
+
+    try{
+      const {data,error}=await sb.functions.invoke('admin-create-user',{
+        body:{action:'delete',email}
+      });
+      if(error)throw error;
+      if(data?.error)throw new Error(data.error);
+      toast('账号已删除');
+      await loadAccounts();
+    }catch(err){
+      console.error(err);
+      toast(err?.message||'删除账号失败');
+    }
+  };
 
   window.updateManagedAccount=async(id,field,value)=>{
     if(!isAdmin)return;
