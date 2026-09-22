@@ -18,7 +18,7 @@ function showAuth(){$('authView').classList.remove('hidden');$('appView').classL
 async function showApp(user){$('authView').classList.add('hidden');$('appView').classList.remove('hidden');$('userEmail').textContent=user.email||'';await loadAll()}
 
 $('authForm').addEventListener('submit',async e=>{e.preventDefault();const email=$('email').value.trim(),password=$('password').value;const{error}=await sb.auth.signInWithPassword({email,password});if(error)toast(error.message);});
-$('signupBtn').onclick=async()=>{const email=$('email').value.trim(),password=$('password').value;if(!email||password.length<6)return toast('请输入邮箱和至少 6 位密码');const{error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:'https://kcy-source.github.io/recipe-costing-system/'}});toast(error?error.message:'注册成功，请检查邮箱确认后登录');};
+
 $('logoutBtn').onclick=()=>sb.auth.signOut();
 $('refreshBtn').onclick=async()=>{
   const btn=$('refreshBtn');
