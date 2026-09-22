@@ -35,7 +35,7 @@
     const style=document.createElement('style');
     style.id='recipeResizeStyle';
     style.textContent=`
-      #recipesView table{table-layout:fixed;width:100%;min-width:900px}
+      #recipesView table{table-layout:fixed;width:100%;min-width:1130px}
       #recipesView .table-wrap{max-height:calc(100vh - 180px);overflow:auto}#recipesView thead th{position:sticky;top:0;z-index:20;overflow:visible;white-space:nowrap;background:#fafbfc;box-shadow:0 1px 0 #e5e7eb}
       #recipesView .recipe-col-resizer{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;z-index:5;touch-action:none}
       #recipesView .recipe-col-resizer::after{content:'';position:absolute;right:3px;top:20%;width:1px;height:60%;background:#d6dbe3;opacity:0}
@@ -45,16 +45,19 @@
     document.head.appendChild(style);
   }
 
+  const recipeMinWidths=[80,260,180,100,110,120,110,170];
+
   function applySavedWidths(){
     if(!recipeHead)return;
     const ths=[...recipeHead.querySelectorAll('th')];
     ths.forEach((th,i)=>{
+      const min=recipeMinWidths[i]||80;
       const saved=Number(localStorage.getItem(`recipeColWidth_${i}`));
-      if(saved>=60){
-        th.style.width=`${saved}px`;
-        th.style.minWidth=`${saved}px`;
-        th.style.maxWidth=`${saved}px`;
-      }
+      const width=saved>=min?saved:min;
+      th.style.width=`${width}px`;
+      th.style.minWidth=`${min}px`;
+      th.style.maxWidth=`${width}px`;
+      if(saved>0 && saved<min)localStorage.setItem(`recipeColWidth_${i}`,String(min));
     });
   }
 
@@ -72,7 +75,7 @@
         e.preventDefault();e.stopPropagation();
         const startX=e.clientX,startWidth=th.getBoundingClientRect().width;
         handle.classList.add('active');document.body.classList.add('recipe-resizing');
-        const onMove=ev=>{const width=Math.max(60,Math.round(startWidth+(ev.clientX-startX)));th.style.width=`${width}px`;th.style.minWidth=`${width}px`;th.style.maxWidth=`${width}px`;};
+        const onMove=ev=>{const min=recipeMinWidths[index]||80;const width=Math.max(min,Math.round(startWidth+(ev.clientX-startX)));th.style.width=`${width}px`;th.style.minWidth=`${min}px`;th.style.maxWidth=`${width}px`;};
         const onUp=()=>{handle.classList.remove('active');document.body.classList.remove('recipe-resizing');localStorage.setItem(`recipeColWidth_${index}`,String(Math.round(th.getBoundingClientRect().width)));document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);};
         document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
       });
