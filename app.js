@@ -58,6 +58,65 @@ function renderDashboard(){
   $('statFoodCost').textContent=pct(fc.length?fc.reduce((a,b)=>a+b,0)/fc.length:0);
   $('statMargin').textContent=pct(m.length?m.reduce((a,b)=>a+b,0)/m.length:0);
 }
+
+function setupDashboardResizers(){
+  const head=document.querySelector('#dashboardView thead tr');
+  if(!head)return;
+
+  const ths=[...head.querySelectorAll('th')];
+
+  ths.forEach((th,index)=>{
+    const saved=Number(localStorage.getItem('dashboardColWidth_'+index));
+    if(saved>=60){
+      th.style.width=saved+'px';
+      th.style.minWidth=saved+'px';
+      th.style.maxWidth=saved+'px';
+    }
+
+    if(th.querySelector('.dashboard-col-resizer'))return;
+
+    const handle=document.createElement('span');
+    handle.className='dashboard-col-resizer';
+    handle.title='拖动调整列宽';
+
+    handle.addEventListener('click',e=>{
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    handle.addEventListener('mousedown',e=>{
+      e.preventDefault();
+      e.stopPropagation();
+
+      const startX=e.clientX;
+      const startWidth=th.getBoundingClientRect().width;
+      handle.classList.add('active');
+      document.body.classList.add('dashboard-resizing');
+
+      const onMove=ev=>{
+        const width=Math.max(60,Math.round(startWidth+(ev.clientX-startX)));
+        th.style.width=width+'px';
+        th.style.minWidth=width+'px';
+        th.style.maxWidth=width+'px';
+      };
+
+      const onUp=()=>{
+        handle.classList.remove('active');
+        document.body.classList.remove('dashboard-resizing');
+        localStorage.setItem('dashboardColWidth_'+index,String(Math.round(th.getBoundingClientRect().width)));
+        document.removeEventListener('mousemove',onMove);
+        document.removeEventListener('mouseup',onUp);
+      };
+
+      document.addEventListener('mousemove',onMove);
+      document.addEventListener('mouseup',onUp);
+    });
+
+    th.appendChild(handle);
+  });
+}
+setupDashboardResizers();
+
 function fillSelectors(){const ingredientOptions=state.ingredients.map(i=>`<option value="${i.id}">${esc(i.name)}</option>`).join('');$('recipeCategory').innerHTML='<option value="">未分类</option>'+state.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');$('costIngredient').innerHTML=ingredientOptions;$('draftIngredient').innerHTML=ingredientOptions;}
 
 document.querySelectorAll('.close-dialog').forEach(b=>b.onclick=()=>b.closest('dialog').close());
