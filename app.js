@@ -29,14 +29,85 @@ async function loadAll(){const [a,b,c,d]=await Promise.all([sb.from('ingredients
 function renderAll(){renderIngredients();renderRecipes();renderDashboard();fillSelectors();}
 function renderIngredients(){$('ingredientRows').innerHTML=state.ingredients.length?state.ingredients.map(i=>`<tr><td><strong>${esc(i.name)}</strong></td><td>${esc(i.category)}</td><td>${Number(i.purchase_quantity)} ${esc(i.purchase_unit)}</td><td>${money(i.purchase_price)}</td><td>${pct(i.yield_percent)}</td><td>${money(unitCost(i))}/${esc(i.base_unit)}</td><td><div class="action-row"><button class="mini-btn" onclick="editIngredient('${i.id}')">编辑</button><button class="mini-btn danger-btn" onclick="deleteIngredient('${i.id}')">删除</button></div></td></tr>`).join(''):'<tr><td colspan="7">还没有原材料</td></tr>';}
 function renderRecipes(){$('recipeRows').innerHTML=state.recipes.length?state.recipes.map(r=>{const c=costingFor(r),cat=state.categories.find(x=>x.id===r.category_id)?.name||'';return`<tr><td><strong>${esc(r.name_cn)}</strong><br><span class="muted">${esc(r.name_en)}</span></td><td>${esc(cat)}</td><td>${money(r.selling_price)}</td><td>${money(c.per)}</td><td class="${c.fc<=Number(r.target_food_cost_percent||30)?'good':'warn'}">${pct(c.fc)}</td><td>${money(c.gp)}<br><span class="muted">${pct(c.margin)}</span></td><td><div class="action-row"><button class="mini-btn" onclick="openCosting('${r.id}')">配料</button><button class="mini-btn" onclick="editRecipe('${r.id}')">编辑</button><button class="mini-btn danger-btn" onclick="deleteRecipe('${r.id}')">删除</button></div></td></tr>`}).join(''):'<tr><td colspan="7">还没有食谱</td></tr>';}
+let dashboardSortKey=localStorage.getItem('dashboardSortKey')||'code';
+let dashboardSortDir=localStorage.getItem('dashboardSortDir')||'asc';
+
+function sortDashboardRecipes(list){
+  const dir=dashboardSortDir==='desc'?-1:1;
+  const textCompare=(a,b)=>String(a||'').localeCompare(String(b||''),'zh-CN',{numeric:true,sensitivity:'base'});
+  return [...list].sort((a,b)=>{
+    let result=0;
+    if(dashboardSortKey==='code'){
+      const ac=String(a.code||'').trim(),bc=String(b.code||'').trim();
+      if(!ac&&bc)return 1;
+      if(ac&&!bc)return -1;
+      result=textCompare(ac,bc);
+    }else if(dashboardSortKey==='name'){
+      result=textCompare(a.name_cn,b.name_cn);
+    }else if(dashboardSortKey==='category'){
+      const ac=state.categories.find(x=>x.id===a.category_id)?.name||'';
+      const bc=state.categories.find(x=>x.id===b.category_id)?.name||'';
+      result=textCompare(ac,bc)||textCompare(a.name_cn,b.name_cn);
+    }
+    return result*dir;
+  });
+}
+
+function updateDashboardSortHeaders(){
+  const head=document.querySelector('#dashboardView thead tr');
+  if(!head)return;
+  const configs=[
+    {key:'code',label:'代号',index:0},
+    {key:'name',label:'菜品',index:1},
+    {key:'category',label:'分类',index:2}
+  ];
+  const ths=[...head.querySelectorAll('th')];
+  configs.forEach(cfg=>{
+    const th=ths[cfg.index];
+    if(!th)return;
+    const handle=th.querySelector('.dashboard-col-resizer');
+    const arrow=dashboardSortKey===cfg.key?(dashboardSortDir==='asc'?' ↑':' ↓'):' ↕';
+    th.textContent=cfg.label+arrow;
+    if(handle)th.appendChild(handle);
+    th.style.cursor='pointer';
+    th.style.userSelect='none';
+    th.dataset.dashboardSortKey=cfg.key;
+  });
+}
+
+function setupDashboardSorting(){
+  const head=document.querySelector('#dashboardView thead tr');
+  if(!head)return;
+  const ths=[...head.querySelectorAll('th')];
+  const configs=[
+    {key:'code',index:0},
+    {key:'name',index:1},
+    {key:'category',index:2}
+  ];
+  configs.forEach(cfg=>{
+    const th=ths[cfg.index];
+    if(!th)return;
+    th.onclick=e=>{
+      if(e.target.closest('.dashboard-col-resizer'))return;
+      if(dashboardSortKey===cfg.key) dashboardSortDir=dashboardSortDir==='asc'?'desc':'asc';
+      else { dashboardSortKey=cfg.key; dashboardSortDir='asc'; }
+      localStorage.setItem('dashboardSortKey',dashboardSortKey);
+      localStorage.setItem('dashboardSortDir',dashboardSortDir);
+      updateDashboardSortHeaders();
+      renderDashboard();
+    };
+  });
+  updateDashboardSortHeaders();
+}
+
 function renderDashboard(){
   let fc=[],m=[];
   const q=($('dashboardSearchInput')?.value||'').trim().toLowerCase();
-  const filtered=state.recipes.filter(r=>!q
+  const filtered=sortDashboardRecipes(state.recipes.filter(r=>!q
     ||String(r.code||'').toLowerCase().includes(q)
     ||String(r.name_cn||'').toLowerCase().includes(q)
     ||String(r.name_en||'').toLowerCase().includes(q)
-  );
+  ));
   $('dashboardRows').innerHTML=filtered.length?filtered.map(r=>{
     const c=costingFor(r);
     const cat=state.categories.find(x=>x.id===r.category_id)?.name||'';
@@ -116,6 +187,7 @@ function setupDashboardResizers(){
   });
 }
 setupDashboardResizers();
+setupDashboardSorting();
 
 function fillSelectors(){const ingredientOptions=state.ingredients.map(i=>`<option value="${i.id}">${esc(i.name)}</option>`).join('');$('recipeCategory').innerHTML='<option value="">未分类</option>'+state.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');$('costIngredient').innerHTML=ingredientOptions;$('draftIngredient').innerHTML=ingredientOptions;}
 
