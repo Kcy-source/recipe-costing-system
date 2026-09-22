@@ -118,11 +118,14 @@ function setupDashboardSorting(){
 function renderDashboard(){
   let fc=[],m=[];
   const q=($('dashboardSearchInput')?.value||'').trim().toLowerCase();
-  const filtered=sortDashboardRecipes(state.recipes.filter(r=>!q
-    ||String(r.code||'').toLowerCase().includes(q)
-    ||String(r.name_cn||'').toLowerCase().includes(q)
-    ||String(r.name_en||'').toLowerCase().includes(q)
-  ));
+  const filtered=sortDashboardRecipes(state.recipes.filter(r=>{
+    if(!q)return true;
+    const categoryName=state.categories.find(x=>x.id===r.category_id)?.name||'';
+    return String(r.code||'').toLowerCase().includes(q)
+      ||String(r.name_cn||'').toLowerCase().includes(q)
+      ||String(r.name_en||'').toLowerCase().includes(q)
+      ||String(categoryName).toLowerCase().includes(q);
+  }));
   $('dashboardRows').innerHTML=filtered.length?filtered.map(r=>{
     const c=costingFor(r);
     const cat=state.categories.find(x=>x.id===r.category_id)?.name||'';
