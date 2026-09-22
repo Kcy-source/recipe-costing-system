@@ -104,10 +104,30 @@
     return list;
   }
 
+
+  (function setupRecipeSearch(){
+    const view=document.getElementById('recipesView');
+    if(!view || document.getElementById('recipeSearchInput'))return;
+    const panel=view.querySelector('.panel');
+    const tableWrap=panel?.querySelector('.table-wrap');
+    if(!panel||!tableWrap)return;
+    const wrap=document.createElement('div');
+    wrap.style.padding='16px 20px 8px';
+    wrap.innerHTML='<input id="recipeSearchInput" type="search" placeholder="搜索菜品名称或代号，例如：百花酿皮蛋 / Century Egg / A01" style="width:100%;font-size:16px;padding:13px 14px" />';
+    panel.insertBefore(wrap,tableWrap);
+    document.getElementById('recipeSearchInput').addEventListener('input',renderRecipes);
+  })();
+
   const oldRenderRecipes=renderRecipes;
   renderRecipes=function(){
     const rows=document.getElementById('recipeRows');if(!rows)return oldRenderRecipes();
-    const recipes=sortedRecipes();
+    const q=(document.getElementById('recipeSearchInput')?.value||'').trim().toLowerCase();
+    const recipes=sortedRecipes().filter(r=>{
+      if(!q)return true;
+      return String(r.code||'').toLowerCase().includes(q)
+        ||String(r.name_cn||'').toLowerCase().includes(q)
+        ||String(r.name_en||'').toLowerCase().includes(q);
+    });
     rows.innerHTML=recipes.length?recipes.map(r=>{const c=costingFor(r),cat=state.categories.find(x=>x.id===r.category_id)?.name||'';return `<tr><td><strong>${esc(r.code||'-')}</strong></td><td><strong>${esc(r.name_cn)}</strong><br><span class="muted">${esc(r.name_en)}</span></td><td>${esc(cat)}</td><td>${money(r.selling_price)}</td><td>${money(c.per)}</td><td class="${c.fc<=Number(r.target_food_cost_percent||30)?'good':'warn'}">${pct(c.fc)}</td><td>${money(c.gp)}<br><span class="muted">${pct(c.margin)}</span></td><td><div class="action-row"><button class="mini-btn" onclick="openCosting('${r.id}')">配料</button><button class="mini-btn" onclick="editRecipe('${r.id}')">编辑</button><button class="mini-btn danger-btn" onclick="deleteRecipe('${r.id}')">删除</button></div></td></tr>`;}).join(''):'<tr><td colspan="8">还没有食谱</td></tr>';
     ensureResizers();
   };
