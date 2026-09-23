@@ -159,7 +159,11 @@ function renderDashboard(){
   $('dashboardRows').innerHTML=filtered.length?filtered.map(r=>{
     const c=costingFor(r);
     const cat=state.categories.find(x=>x.id===r.category_id)?.name||'';
-    fc.push(c.fc);m.push(c.margin);
+    const hasIngredients=state.recipeIngredients.some(x=>x.recipe_id===r.id);
+    if(hasIngredients){
+      fc.push(c.fc);
+      m.push(c.margin);
+    }
     return `<tr>
       <td><strong>${esc(r.code||'-')}</strong></td>
       <td><button type="button" class="dashboard-recipe-link" onclick="openCostingView(\'${r.id}\')"><strong>${esc(r.name_cn)}</strong>${r.name_en?`<br><span class="muted">${esc(r.name_en)}</span>`:''}</button></td>
@@ -174,8 +178,8 @@ function renderDashboard(){
     :'<tr><td colspan="7">还没有食谱资料</td></tr>');
   $('statIngredients').textContent=state.ingredients.length;
   $('statRecipes').textContent=state.recipes.length;
-  $('statFoodCost').textContent=pct(fc.length?fc.reduce((a,b)=>a+b,0)/fc.length:0);
-  $('statMargin').textContent=pct(m.length?m.reduce((a,b)=>a+b,0)/m.length:0);
+  $('statFoodCost').textContent=fc.length?pct(fc.reduce((a,b)=>a+b,0)/fc.length):'未计算';
+  $('statMargin').textContent=m.length?pct(m.reduce((a,b)=>a+b,0)/m.length):'未计算';
 }
 
 function setupDashboardResizers(){
