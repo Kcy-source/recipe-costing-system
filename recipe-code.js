@@ -116,22 +116,31 @@
     if(!panel||!tableWrap)return;
     const wrap=document.createElement('div');
     wrap.style.padding='16px 20px 8px';
-    wrap.innerHTML='<input id="recipeSearchInput" type="search" placeholder="搜索菜品名称、代号或分类，例如：百花酿皮蛋 / A01 / 前菜" style="width:100%;font-size:16px;padding:13px 14px" />';
+    wrap.style.display='grid';
+    wrap.style.gridTemplateColumns='160px 1fr';
+    wrap.style.gap='10px';
+    wrap.innerHTML='<select id="recipeSearchMode" style="font-size:15px;padding:13px 12px"><option value="all">全部</option><option value="name">菜名</option><option value="code">代号</option><option value="category">分类</option></select><input id="recipeSearchInput" type="search" placeholder="输入搜索内容" style="width:100%;font-size:16px;padding:13px 14px" />';
     panel.insertBefore(wrap,tableWrap);
     document.getElementById('recipeSearchInput').addEventListener('input',()=>renderRecipes());
+    document.getElementById('recipeSearchMode').addEventListener('change',()=>renderRecipes());
   })();
 
   const oldRenderRecipes=renderRecipes;
   renderRecipes=function(){
     const rows=document.getElementById('recipeRows');if(!rows)return oldRenderRecipes();
     const q=(document.getElementById('recipeSearchInput')?.value||'').trim().toLowerCase();
+    const mode=document.getElementById('recipeSearchMode')?.value||'all';
     const recipes=sortedRecipes().filter(r=>{
       if(!q)return true;
-      const categoryName=state.categories.find(x=>x.id===r.category_id)?.name||'';
-      return String(r.code||'').toLowerCase().includes(q)
-        ||String(r.name_cn||'').toLowerCase().includes(q)
-        ||String(r.name_en||'').toLowerCase().includes(q)
-        ||String(categoryName).toLowerCase().includes(q);
+      const code=String(r.code||'').toLowerCase();
+      const nameCn=String(r.name_cn||'').toLowerCase();
+      const nameEn=String(r.name_en||'').toLowerCase();
+      const categoryName=String(state.categories.find(x=>x.id===r.category_id)?.name||'').toLowerCase();
+
+      if(mode==='name')return nameCn.includes(q)||nameEn.includes(q);
+      if(mode==='code')return code.includes(q);
+      if(mode==='category')return categoryName.includes(q);
+      return code.includes(q)||nameCn.includes(q)||nameEn.includes(q)||categoryName.includes(q);
     });
     rows.innerHTML=recipes.length?recipes.map(r=>{const c=costingFor(r),cat=state.categories.find(x=>x.id===r.category_id)?.name||'';return `<tr><td><strong>${esc(r.code||'-')}</strong></td><td><strong>${esc(r.name_cn)}</strong><br><span class="muted">${esc(r.name_en)}</span></td><td>${esc(cat)}</td><td>${sellingPriceLabel(r.selling_price,r)}</td><td>${money(c.per)}</td><td class="${c.fc<=Number(r.target_food_cost_percent||30)?'good':'warn'}">${pct(c.fc)}</td><td>${money(c.gp)}<br><span class="muted">${pct(c.margin)}</span></td><td><div class="action-row"><button class="mini-btn" onclick="openCosting('${r.id}')">配料</button><button class="mini-btn" onclick="editRecipe('${r.id}')">编辑</button><button class="mini-btn danger-btn" onclick="deleteRecipe('${r.id}')">删除</button></div></td></tr>`;}).join(''):'<tr><td colspan="8">还没有食谱</td></tr>';
     ensureResizers();
