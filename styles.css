@@ -91,7 +91,7 @@ body.recipe-column-resizing,body.recipe-column-resizing *{cursor:col-resize!impo
 }
 
 /* Reusable kitchen preparations */
-.preparation-search{padding:16px 20px;display:flex;justify-content:flex-end}
+.preparation-search{padding:16px 20px;display:flex;justify-content:flex-start}
 .preparation-search input{max-width:450px;min-width:0}
 #preparationsView .table-wrap{max-height:calc(100vh - 245px);overflow:auto}
 #preparationsView table{table-layout:fixed;min-width:1080px}
