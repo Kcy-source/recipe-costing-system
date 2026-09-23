@@ -9,9 +9,8 @@ const sellingPriceLabel=(n,recipe=null)=>{
   const price=Number(n||0);
   if(price<=0)return '时价';
   const code=String(recipe?.code||'').toUpperCase();
-  const cat=state.categories.find(x=>x.id===recipe?.category_id)?.name||'';
-  if(code.startsWith('P')||cat.includes('虾类'))return money(price)+' / 100g';
-  if(code.startsWith('C')||cat.includes('螃蟹'))return money(price)+' / 100g';
+  if(['P01','P02','P03','P08'].includes(code))return money(price)+' / 100g';
+  if(code.startsWith('C'))return money(price)+' / 100g';
   return money(price);
 };
 const pct=n=>`${Number(n||0).toFixed(1)}%`;
