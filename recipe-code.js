@@ -142,7 +142,7 @@
       if(mode==='category')return categoryName.includes(q);
       return code.includes(q)||nameCn.includes(q)||nameEn.includes(q)||categoryName.includes(q);
     });
-    rows.innerHTML=recipes.length?recipes.map(r=>{const c=costingFor(r),cat=state.categories.find(x=>x.id===r.category_id)?.name||'';return `<tr><td><strong>${esc(r.code||'-')}</strong></td><td><strong>${esc(r.name_cn)}</strong><br><span class="muted">${esc(r.name_en)}</span></td><td>${esc(cat)}</td><td>${sellingPriceLabel(r.selling_price,r)}</td><td>${money(c.per)}</td><td class="${c.fc<=Number(r.target_food_cost_percent||30)?'good':'warn'}">${pct(c.fc)}</td><td>${money(c.gp)}<br><span class="muted">${pct(c.margin)}</span></td><td><div class="action-row"><button class="mini-btn" onclick="editRecipe('${r.id}')">编辑</button><button class="mini-btn danger-btn" onclick="deleteRecipe('${r.id}')">删除</button></div></td></tr>`;}).join(''):'<tr><td colspan="8">还没有食谱</td></tr>';
+    rows.innerHTML=recipes.length?recipes.map(r=>{const c=costingFor(r),cat=state.categories.find(x=>x.id===r.category_id)?.name||'';return `<tr><td><strong>${esc(r.code||'-')}</strong></td><td><strong>${esc(r.name_cn)}</strong><br><span class="muted">${esc(r.name_en)}</span></td><td>${esc(cat)}</td><td>${sellingPriceLabel(r.selling_price,r)}</td><td>${money(c.per)}</td><td class="${c.fc<=Number(r.target_food_cost_percent||30)?'good':'warn'}">${pct(c.fc)}</td><td>${money(c.gp)}<br><span class="muted">${pct(c.margin)}</span></td><td><div class="action-row"><button class="mini-btn" onclick="editRecipe('${r.id}')">添加配料</button><button class="mini-btn danger-btn" onclick="deleteRecipe('${r.id}')">删除</button></div></td></tr>`;}).join(''):'<tr><td colspan="8">还没有食谱</td></tr>';
     ensureResizers();
   };
 
@@ -150,7 +150,12 @@
   resetRecipeForm=function(){oldResetRecipeForm();if(document.getElementById('recipeCode'))document.getElementById('recipeCode').value='';};
 
   const oldEditRecipe=window.editRecipe;
-  window.editRecipe=id=>{const r=state.recipes.find(x=>x.id===id);oldEditRecipe(id);if(r&&document.getElementById('recipeCode'))document.getElementById('recipeCode').value=r.code||'';};
+  window.editRecipe=id=>{
+    const r=state.recipes.find(x=>x.id===id);
+    oldEditRecipe(id);
+    if(r&&document.getElementById('recipeCode'))document.getElementById('recipeCode').value=r.code||'';
+    if(r&&document.getElementById('recipeDialogTitle'))document.getElementById('recipeDialogTitle').textContent='添加配料 · '+r.name_cn;
+  };
 
   form.addEventListener('submit',async e=>{
     e.preventDefault();e.stopImmediatePropagation();
@@ -161,7 +166,19 @@
     if(res.error){if(String(res.error.message||'').toLowerCase().includes('recipes_code_unique_idx'))return toast(`代号 ${code} 已存在`);return toast(res.error.message);}
     const recipeId=res.data.id;
     if(id){const del=await sb.from('recipe_ingredients').delete().eq('recipe_id',recipeId);if(del.error)return toast(del.error.message);}
-    if(state.draftIngredients.length){const payload=state.draftIngredients.map((x,index)=>({recipe_id:recipeId,ingredient_id:x.ingredient_id,display_quantity:(x.display_quantity||'').trim()||null,quantity:Number(x.quantity||0),unit:x.unit,waste_percent:Number(x.waste_percent||0),sort_order:index}));const ins=await sb.from('recipe_ingredients').insert(payload);if(ins.error)return toast(ins.error.message);}
+    if(state.draftIngredients.length){
+      const payload=state.draftIngredients.map((x,index)=>({
+        recipe_id:recipeId,
+        chef_name:String(x.chef_name||'').trim()||null,
+        ingredient_id:x.ingredient_id||null,
+        quantity:Number(x.quantity||0),
+        unit:x.unit,
+        waste_percent:Number(x.waste_percent||0),
+        sort_order:index
+      }));
+      const ins=await sb.from('recipe_ingredients').insert(payload);
+      if(ins.error)return toast(ins.error.message);
+    }
     document.getElementById('recipeDialog').close();await loadAll();toast('食谱和原材料已保存');
   },true);
 
