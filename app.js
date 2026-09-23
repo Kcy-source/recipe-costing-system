@@ -11,6 +11,7 @@ const sellingPriceLabel=(n,recipe=null)=>{
   const code=String(recipe?.code||'').toUpperCase();
   if(['P01','P02','P03','P08'].includes(code))return money(price)+' / 100g';
   if(code.startsWith('C'))return money(price)+' / 100g';
+  if(['F04','F05','F06','F08','F09','F10','F11'].includes(code))return money(price)+' / 100g';
   return money(price);
 };
 const pct=n=>`${Number(n||0).toFixed(1)}%`;
