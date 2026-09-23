@@ -154,7 +154,7 @@
     const r=state.recipes.find(x=>x.id===id);
     oldEditRecipe(id);
     if(r&&document.getElementById('recipeCode'))document.getElementById('recipeCode').value=r.code||'';
-    if(r&&document.getElementById('recipeDialogTitle'))document.getElementById('recipeDialogTitle').textContent='添加配料 · '+r.name_cn;
+    if(r&&document.getElementById('recipeDialogTitle'))document.getElementById('recipeDialogTitle').textContent=r.name_cn;
   };
 
   form.addEventListener('submit',async e=>{
