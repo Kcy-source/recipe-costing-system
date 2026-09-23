@@ -250,7 +250,7 @@ function setupDashboardResizers(){
 setupDashboardResizers();
 setupDashboardSorting();
 
-function fillSelectors(){const ingredientOptions=state.ingredients.map(i=>`<option value="${i.id}">${esc(i.name)}</option>`).join('');$('recipeCategory').innerHTML='<option value="">未分类</option>'+state.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');$('costIngredient').innerHTML=ingredientOptions;}
+function fillSelectors(){const ingredientOptions=state.ingredients.map(i=>`<option value="${i.id}">${esc(i.name)}</option>`).join('');refreshRecipeCategoryOptions();$('costIngredient').innerHTML=ingredientOptions;}
 
 document.querySelectorAll('.close-dialog').forEach(b=>b.onclick=()=>b.closest('dialog').close());
 $('addIngredientBtn').onclick=()=>{resetIngredientForm();$('ingredientDialog').showModal();};
@@ -260,8 +260,8 @@ $('ingredientForm').addEventListener('submit',async e=>{e.preventDefault();const
 window.deleteIngredient=async id=>{if(!confirm('确定删除这个原材料？已被食谱使用时将无法删除。'))return;const{error}=await sb.from('ingredients').delete().eq('id',id);if(error)return toast(error.message);await loadAll();};
 
 $('addRecipeBtn').onclick=()=>{resetRecipeForm();$('recipeDialog').showModal();};
-function resetRecipeForm(){$('recipeForm').reset();$('recipeId').value='';$('recipeForm').dataset.updatedAt='';$('recipeDialogTitle').textContent='新增食谱';$('recipeYield').value=1;$('yieldUnit').value='份';$('sellingPrice').value=0;$('targetFoodCost').value=30;state.draftIngredients=[];renderDraftIngredients();}
-window.editRecipe=id=>{const r=state.recipes.find(x=>x.id===id);if(!r)return;$('recipeId').value=r.id;$('recipeForm').dataset.updatedAt=r.updated_at;$('recipeNameCn').value=r.name_cn;$('recipeNameEn').value=r.name_en||'';$('recipeCategory').value=r.category_id||'';$('recipeYield').value=r.recipe_yield;$('yieldUnit').value=r.yield_unit;$('sellingPrice').value=r.selling_price;$('targetFoodCost').value=r.target_food_cost_percent||30;$('recipeNotes').value=r.notes||'';$('method').value=r.method||'';state.draftIngredients=state.recipeIngredients.filter(x=>x.recipe_id===id).map(x=>({...x}));$('recipeDialogTitle').textContent='编辑食谱';renderDraftIngredients();$('recipeDialog').showModal();};
+function resetRecipeForm(){$('recipeForm').reset();$('recipeId').value='';$('recipeForm').dataset.updatedAt='';setRecipeCategoryDraft(null);$('recipeDialogTitle').textContent='新增食谱';$('recipeYield').value=1;$('yieldUnit').value='份';$('sellingPrice').value=0;$('targetFoodCost').value=30;state.draftIngredients=[];renderDraftIngredients();}
+window.editRecipe=id=>{const r=state.recipes.find(x=>x.id===id);if(!r)return;$('recipeId').value=r.id;$('recipeForm').dataset.updatedAt=r.updated_at;$('recipeNameCn').value=r.name_cn;$('recipeNameEn').value=r.name_en||'';setRecipeCategoryDraft(r.category_id);$('recipeYield').value=r.recipe_yield;$('yieldUnit').value=r.yield_unit;$('sellingPrice').value=r.selling_price;$('targetFoodCost').value=r.target_food_cost_percent||30;$('recipeNotes').value=r.notes||'';$('method').value=r.method||'';state.draftIngredients=state.recipeIngredients.filter(x=>x.recipe_id===id).map(x=>({...x}));$('recipeDialogTitle').textContent='编辑食谱';renderDraftIngredients();$('recipeDialog').showModal();};
 
 $('addDraftIngredientBtn').onclick=()=>{const ingredient_id=$('draftIngredient').value,quantity=Number($('draftQuantity').value),unit=$('draftUnit').value,waste_percent=Number($('draftWaste').value||0);if(!ingredient_id||quantity<=0)return toast('请选择原材料并输入用量');state.draftIngredients.push({ingredient_id,quantity,unit,waste_percent,sort_order:state.draftIngredients.length});$('draftQuantity').value='';$('draftWaste').value=0;renderDraftIngredients();};
 window.removeDraftIngredient=index=>{state.draftIngredients.splice(index,1);state.draftIngredients.forEach((x,i)=>x.sort_order=i);renderDraftIngredients();};
