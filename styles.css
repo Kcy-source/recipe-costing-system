@@ -68,3 +68,19 @@ body.dashboard-resizing{cursor:col-resize!important;user-select:none!important}
 .price-change-down{color:#067647;font-weight:700}
 .price-change-flat{color:#667085}
 @media(max-width:600px){.price-history-search-row{grid-template-columns:1fr}}
+
+.chef-ingredient-add-row{grid-template-columns:2fr 1fr .8fr 1fr auto}
+.recipe-ingredient-map-table{min-width:1180px}
+.recipe-ingredient-map-table th:nth-child(1){min-width:170px}
+.recipe-ingredient-map-table th:nth-child(3){min-width:360px}
+.ingredient-map-control{display:grid;grid-template-columns:minmax(220px,1fr) auto auto;gap:6px;align-items:center}
+.ingredient-map-control input{padding:8px 10px;font-size:12px}
+.ingredient-map-control .map-btn{background:#7b1e1e;color:#fff}
+.mapping-status{margin-top:6px;font-size:11px}
+.mapping-status.mapped{color:#067647}
+.mapping-status.pending{color:#b54708;font-weight:700}
+.mapping-supplier{margin-top:2px;color:#667085;font-weight:400}
+@media(max-width:700px){
+  .chef-ingredient-add-row{grid-template-columns:1fr}
+  .ingredient-map-control{grid-template-columns:1fr auto auto}
+}
