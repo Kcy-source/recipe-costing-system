@@ -70,9 +70,14 @@ body.dashboard-resizing{cursor:col-resize!important;user-select:none!important}
 @media(max-width:600px){.price-history-search-row{grid-template-columns:1fr}}
 
 .chef-ingredient-add-row{grid-template-columns:2fr 1fr .8fr 1fr auto}
-.recipe-ingredient-map-table{min-width:1180px}
-.recipe-ingredient-map-table th:nth-child(1){min-width:170px}
-.recipe-ingredient-map-table th:nth-child(3){min-width:360px}
+.recipe-ingredient-map-table{table-layout:fixed;min-width:0}
+.recipe-ingredient-map-table th{position:relative;padding-right:20px}
+.recipe-ingredient-map-table td{overflow-wrap:anywhere}
+.recipe-column-resizer{position:absolute;right:0;top:0;width:10px;height:100%;cursor:col-resize;touch-action:none;z-index:3}
+.recipe-column-resizer::after{content:"";position:absolute;right:4px;top:20%;width:2px;height:60%;background:#d8dde5}
+.recipe-column-resizer:hover::after,.recipe-column-resizer.active::after,.recipe-column-resizer:focus-visible::after{background:#7b1e1e}
+.recipe-column-resizer:focus-visible{outline:2px solid #7b1e1e;outline-offset:-2px}
+body.recipe-column-resizing,body.recipe-column-resizing *{cursor:col-resize!important;user-select:none!important}
 .ingredient-map-control{display:grid;grid-template-columns:minmax(220px,1fr) auto auto;gap:6px;align-items:center}
 .ingredient-map-control input{padding:8px 10px;font-size:12px}
 .ingredient-map-control .map-btn{background:#7b1e1e;color:#fff}
@@ -103,7 +108,8 @@ body.dashboard-resizing{cursor:col-resize!important;user-select:none!important}
 .component-waste{width:80px}
 #preparationForm>label{margin-bottom:12px}
 #preparationForm .dialog-head{margin-bottom:16px}
-#recipeDialog .recipe-ingredient-map-table{min-width:1220px}
-#recipeDialog .recipe-ingredient-map-table th:nth-child(2){width:215px}
-#recipeDialog .recipe-ingredient-map-table th:nth-child(5){width:110px}
+#recipeDialog .component-quantity{grid-template-columns:repeat(2,minmax(0,1fr));min-width:0}
+#recipeDialog .ingredient-map-control{grid-template-columns:minmax(0,1fr) auto auto}
+#recipeDialog .recipe-ingredient-map-table input{min-width:0}
+#recipeDialog .component-waste{width:100%;max-width:80px}
 @media(max-width:850px){.sidebar nav{flex-wrap:wrap}.sidebar>div:first-child{flex-wrap:wrap}.preparation-summary{grid-template-columns:1fr}.preparation-search input{max-width:100%}}
