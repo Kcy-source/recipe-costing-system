@@ -142,7 +142,7 @@
       if(mode==='category')return categoryName.includes(q);
       return code.includes(q)||nameCn.includes(q)||nameEn.includes(q)||categoryName.includes(q);
     });
-    rows.innerHTML=recipes.length?recipes.map(r=>{const c=costingFor(r),cat=state.categories.find(x=>x.id===r.category_id)?.name||'';return `<tr><td><strong>${esc(r.code||'-')}</strong></td><td><strong>${esc(r.name_cn)}</strong><br><span class="muted">${esc(r.name_en)}</span></td><td>${esc(cat)}</td><td>${sellingPriceLabel(r.selling_price,r)}</td><td>${money(c.per)}</td><td class="${c.fc<=Number(r.target_food_cost_percent||30)?'good':'warn'}">${pct(c.fc)}</td><td>${money(c.gp)}<br><span class="muted">${pct(c.margin)}</span></td><td><div class="action-row"><button class="mini-btn" onclick="editRecipe('${r.id}')">添加配料</button><button class="mini-btn danger-btn" onclick="deleteRecipe('${r.id}')">删除</button></div></td></tr>`;}).join(''):'<tr><td colspan="8">还没有食谱</td></tr>';
+    rows.innerHTML=recipes.length?recipes.map(r=>{const c=costingFor(r),cat=state.categories.find(x=>x.id===r.category_id)?.name||'';return `<tr><td><strong>${esc(r.code||'-')}</strong></td><td><strong>${esc(r.name_cn)}</strong><br><span class="muted">${esc(r.name_en)}</span></td><td>${esc(cat)}</td><td>${sellingPriceLabel(r.selling_price,r)}</td><td>${costAmount(c.per)}</td><td class="${c.complete&&c.fc<=Number(r.target_food_cost_percent||30)?'good':'warn'}">${costPercent(c.fc)}</td><td>${costAmount(c.gp)}<br><span class="muted">${costPercent(c.margin)}</span></td><td><div class="action-row"><button class="mini-btn" onclick="editRecipe('${r.id}')">添加配料</button><button class="mini-btn danger-btn" onclick="deleteRecipe('${r.id}')">删除</button></div></td></tr>`;}).join(''):'<tr><td colspan="8">还没有食谱</td></tr>';
     ensureResizers();
   };
 
@@ -162,24 +162,22 @@
     const id=document.getElementById('recipeId').value,code=(document.getElementById('recipeCode').value||'').trim().toUpperCase();
     if(code){const duplicate=state.recipes.find(r=>String(r.code||'').trim().toUpperCase()===code&&String(r.id)!==String(id));if(duplicate)return toast(`代号 ${code} 已经被“${duplicate.name_cn}”使用`);}
     const row={code:code||null,name_cn:document.getElementById('recipeNameCn').value.trim(),name_en:document.getElementById('recipeNameEn').value.trim(),category_id:document.getElementById('recipeCategory').value?Number(document.getElementById('recipeCategory').value):null,recipe_yield:Number(document.getElementById('recipeYield').value),yield_unit:document.getElementById('yieldUnit').value.trim()||'份',selling_price:Number(document.getElementById('sellingPrice').value),target_food_cost_percent:Number(document.getElementById('targetFoodCost').value||30),notes:document.getElementById('recipeNotes').value.trim(),method:document.getElementById('method').value.trim(),updated_at:new Date().toISOString()};
-    let res=id?await sb.from('recipes').update(row).eq('id',id).select().single():await sb.from('recipes').insert(row).select().single();
-    if(res.error){if(String(res.error.message||'').toLowerCase().includes('recipes_code_unique_idx'))return toast(`代号 ${code} 已存在`);return toast(res.error.message);}
-    const recipeId=res.data.id;
-    if(id){const del=await sb.from('recipe_ingredients').delete().eq('recipe_id',recipeId);if(del.error)return toast(del.error.message);}
-    if(state.draftIngredients.length){
-      const payload=state.draftIngredients.map((x,index)=>({
-        recipe_id:recipeId,
-        chef_name:String(x.chef_name||'').trim()||null,
-        ingredient_id:x.ingredient_id||null,
-        quantity:Number(x.quantity||0),
-        unit:x.unit,
-        waste_percent:Number(x.waste_percent||0),
-        sort_order:index
-      }));
-      const ins=await sb.from('recipe_ingredients').insert(payload);
-      if(ins.error)return toast(ins.error.message);
-    }
-    document.getElementById('recipeDialog').close();await loadAll();toast('食谱和原材料已保存');
+    const payload=state.draftIngredients.map((x,index)=>({
+      chef_name:String(x.chef_name||'').trim()||null, ingredient_id:x.ingredient_id||null,
+      preparation_id:x.preparation_id||null, quantity:Number(x.quantity), unit:String(x.unit||'').trim(),
+      waste_percent:Number(x.waste_percent||0),sort_order:index
+    }));
+    if(payload.some(x=>!Number.isFinite(x.quantity)||x.quantity<=0||!x.unit||!Number.isFinite(x.waste_percent)||x.waste_percent<0||x.waste_percent>=100))return toast('请检查配料用量、单位和损耗');
+    const button=form.querySelector('.dialog-actions .primary');
+    if(button.disabled)return;
+    button.disabled=true;button.textContent='保存中...';
+    try{
+      const {error}=await sb.rpc('save_recipe_with_components',{p_id:id||null,p_data:row,p_items:payload,p_expected_updated_at:form.dataset.updatedAt||null});
+      if(error)throw error;
+      document.getElementById('recipeDialog').close();await loadAll();toast('食谱和配料已保存');
+    }catch(error){toast(error.message||'保存失败，请重试');}
+    finally{button.disabled=false;button.textContent='保存食谱';}
+
   },true);
 
   setupHeaders();ensureResizers();renderRecipes();

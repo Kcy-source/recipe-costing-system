@@ -84,3 +84,26 @@ body.dashboard-resizing{cursor:col-resize!important;user-select:none!important}
   .chef-ingredient-add-row{grid-template-columns:1fr}
   .ingredient-map-control{grid-template-columns:1fr auto auto}
 }
+
+/* Reusable kitchen preparations */
+.preparation-search{padding:16px 20px;display:flex;justify-content:flex-end}
+.preparation-search input{max-width:450px;min-width:0}
+#preparationsView .table-wrap{max-height:calc(100vh - 245px);overflow:auto}
+#preparationsView table{table-layout:fixed;min-width:1080px}
+#preparationsView th{position:sticky;top:0;z-index:2;overflow:visible;white-space:nowrap;background:#fafbfc}
+#preparationsView th:first-child{width:240px}
+#preparationsView th:last-child{width:140px}
+.preparation-resizer{position:absolute;right:-4px;top:0;width:8px;height:100%;cursor:col-resize;touch-action:none;z-index:3}
+.preparation-resizer:hover{background:#d8dde5}
+.preparation-hint{padding:0 14px}
+.preparation-summary{grid-template-columns:repeat(2,1fr);margin-top:16px}
+.preparation-summary strong{font-size:20px}
+.component-quantity{display:grid;grid-template-columns:90px 90px;gap:6px;min-width:186px}
+.component-quantity input,.component-waste{padding:7px}
+.component-waste{width:80px}
+#preparationForm>label{margin-bottom:12px}
+#preparationForm .dialog-head{margin-bottom:16px}
+#recipeDialog .recipe-ingredient-map-table{min-width:1220px}
+#recipeDialog .recipe-ingredient-map-table th:nth-child(2){width:215px}
+#recipeDialog .recipe-ingredient-map-table th:nth-child(5){width:110px}
+@media(max-width:850px){.sidebar nav{flex-wrap:wrap}.sidebar>div:first-child{flex-wrap:wrap}.preparation-summary{grid-template-columns:1fr}.preparation-search input{max-width:100%}}

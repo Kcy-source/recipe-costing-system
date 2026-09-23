@@ -1,149 +1,55 @@
 (function setupChefRecipeIngredients(){
-  let input=document.getElementById('draftIngredient');
-  if(!input)return;
-
-  if(input.tagName==='SELECT'){
-    const replacement=document.createElement('input');
-    replacement.id='draftIngredient';
-    replacement.placeholder='主厨配料名称，例如：大虾、姜末、上汤';
-    input.replaceWith(replacement);
-    input=replacement;
+  const input=$('draftIngredient'),list=document.createElement('datalist');
+  list.id='recipeIngredientLibraryOptions';document.body.appendChild(list);
+  input.setAttribute('list',list.id);input.placeholder='输入主厨配料名称，或选择原材料 / 配方';
+  function refreshOptions(){list.innerHTML=recipeSources().map(s=>`<option value="${esc(recipeSourceLabel(s))}"></option>`).join('');}
+  function findSource(query){
+    const q=String(query||'').trim().toLowerCase();if(!q)return [];
+    const sources=recipeSources(),exact=sources.filter(s=>recipeSourceLabel(s).toLowerCase()===q);
+    return exact.length?exact:sources.filter(s=>[s.name,s.name_en,s.supplier,s.category,recipeSourceLabel(s)].some(v=>String(v||'').toLowerCase().includes(q)));
   }
-
-  let list=document.getElementById('recipeIngredientLibraryOptions');
-  if(!list){
-    list=document.createElement('datalist');
-    list.id='recipeIngredientLibraryOptions';
-    document.body.appendChild(list);
+  function assignSource(row,s){
+    row.ingredient_id=s.kind==='ingredient'?s.id:null;row.preparation_id=s.kind==='preparation'?s.id:null;row._mapping_search=recipeSourceLabel(s);
   }
-
-  function ingredientLabel(i){
-    const parts=[String(i.name||'').trim()];
-    if(i.name_en)parts.push(String(i.name_en).trim());
-    let label=parts.filter(Boolean).join(' / ');
-    if(i.supplier)label+=' · '+String(i.supplier).trim();
-    return label;
-  }
-
-  function refreshIngredientLibraryOptions(){
-    list.innerHTML=state.ingredients.map(i =>
-      `<option value="${esc(ingredientLabel(i))}"></option>`
-    ).join('');
-  }
-
-  function findIngredient(query){
-    const q=String(query||'').trim().toLowerCase();
-    if(!q)return {ingredient:null,multiple:false};
-
-    const exact=state.ingredients.find(i=>ingredientLabel(i).toLowerCase()===q);
-    if(exact)return {ingredient:exact,multiple:false};
-
-    const matches=state.ingredients.filter(i=>{
-      const hay=[
-        i.name,
-        i.name_en,
-        i.supplier,
-        ingredientLabel(i)
-      ].map(v=>String(v||'').toLowerCase());
-      return hay.some(v=>v.includes(q));
-    });
-
-    return {
-      ingredient:matches.length===1?matches[0]:null,
-      multiple:matches.length>1
-    };
-  }
-
-  document.getElementById('addDraftIngredientBtn').onclick=()=>{
-    const name=(input.value||'').trim();
-    const quantity=Number(document.getElementById('draftQuantity').value);
-    const unit=document.getElementById('draftUnit').value;
-    const waste_percent=Number(document.getElementById('draftWaste').value||0);
-
-    if(!name||quantity<=0)return toast('请输入主厨配料名称和用量');
-
-    state.draftIngredients.push({
-      chef_name:name,
-      ingredient_id:null,
-      quantity,
-      unit,
-      waste_percent,
-      sort_order:state.draftIngredients.length
-    });
-
-    input.value='';
-    document.getElementById('draftQuantity').value='';
-    document.getElementById('draftWaste').value=0;
-    renderDraftIngredients();
+  $('addDraftIngredientBtn').onclick=()=>{
+    const name=input.value.trim(),quantity=Number($('draftQuantity').value),unit=$('draftUnit').value.trim(),waste_percent=Number($('draftWaste').value||0);
+    if(!name||!Number.isFinite(quantity)||quantity<=0||!unit)return toast('请输入配料名称、用量和单位');
+    if(!Number.isFinite(waste_percent)||waste_percent<0||waste_percent>=100)return toast('请检查损耗百分比');
+    const row={chef_name:name,ingredient_id:null,preparation_id:null,quantity,unit,waste_percent,sort_order:state.draftIngredients.length};
+    const exact=recipeSources().filter(s=>recipeSourceLabel(s)===name);
+    if(exact.length===1){assignSource(row,exact[0]);row.chef_name=exact[0].name;}
+    state.draftIngredients.push(row);input.value='';$('draftQuantity').value='';$('draftWaste').value=0;renderDraftIngredients();
   };
-
   window.mapDraftIngredient=index=>{
-    const row=state.draftIngredients[index];
-    if(!row)return;
-
-    const field=document.getElementById('ingredientMap_'+index);
-    const result=findIngredient(field?.value||'');
-
-    if(result.multiple)return toast('找到多个原材料，请从下拉建议中选择完整的一项');
-    if(!result.ingredient)return toast('找不到对应原材料，请换名称、英文名或供应商搜索');
-
-    row.ingredient_id=result.ingredient.id;
-    row._mapping_search=ingredientLabel(result.ingredient);
-    renderDraftIngredients();
-    toast('已对应原材料：'+result.ingredient.name);
+    const row=state.draftIngredients[index];if(!row)return;
+    const matches=findSource($('ingredientMap_'+index)?.value);
+    if(matches.length>1)return toast('找到多个原材料或配方，请选择完整的一项');
+    if(!matches.length)return toast('找不到对应原材料或配方，请换名称搜索');
+    assignSource(row,matches[0]);renderDraftIngredients();
   };
-
   window.clearDraftIngredientMapping=index=>{
-    const row=state.draftIngredients[index];
-    if(!row)return;
-    row.ingredient_id=null;
-    row._mapping_search='';
-    renderDraftIngredients();
+    const row=state.draftIngredients[index];if(!row)return;
+    row.ingredient_id=null;row.preparation_id=null;row._mapping_search='';renderDraftIngredients();
   };
-
+  window.updateDraftComponent=(index,field,value)=>{
+    const row=state.draftIngredients[index];if(!row)return;
+    row[field]=field==='unit'?value.trim():Number(value);renderDraftIngredients();
+  };
   renderDraftIngredients=function(){
-    refreshIngredientLibraryOptions();
-
-    const c=draftCosting();
-    const rows=document.getElementById('draftIngredientRows');
-
-    rows.innerHTML=state.draftIngredients.length
-      ?state.draftIngredients.map((x,index)=>{
-        const mapped=state.ingredients.find(y=>y.id===x.ingredient_id);
-        const chefName=String(x.chef_name||mapped?.name||'').trim();
-        const mappedLabel=mapped?ingredientLabel(mapped):'';
-        const inputValue=String(x._mapping_search||mappedLabel||'');
-        const unitCostText=mapped?`${money(unitCost(mapped))}/${esc(mapped.base_unit||'')}`:'待对应';
-        const costText=mapped?money(ingredientCost(x)):'0.00';
-        const supplier=mapped?.supplier? `<div class="mapping-supplier">供应商：${esc(mapped.supplier)}</div>` : '';
-        const status=mapped
-          ?`<div class="mapping-status mapped">已对应：${esc(mapped.name||'')}${supplier}</div>`
-          :'<div class="mapping-status pending">待对应原材料</div>';
-
-        return `<tr>
-          <td><strong>${esc(chefName)}</strong></td>
-          <td>${Number(x.quantity)} ${esc(x.unit)}</td>
-          <td>
-            <div class="ingredient-map-control">
-              <input id="ingredientMap_${index}" list="recipeIngredientLibraryOptions" value="${esc(inputValue)}" placeholder="搜索原材料 / 英文名 / 供应商"/>
-              <button type="button" class="mini-btn map-btn" onclick="mapDraftIngredient(${index})">对应</button>
-              ${mapped?`<button type="button" class="mini-btn" onclick="clearDraftIngredientMapping(${index})">取消</button>`:''}
-            </div>
-            ${status}
-          </td>
-          <td>${unitCostText}</td>
-          <td>${pct(x.waste_percent)}</td>
-          <td>${costText}</td>
-          <td><button type="button" class="mini-btn danger-btn" onclick="removeDraftIngredient(${index})">删除</button></td>
-        </tr>`;
-      }).join('')
-      :'<tr><td colspan="7">请先输入主厨食谱里的配料名称</td></tr>';
-
-    document.getElementById('draftCostTotal').textContent=money(c.total);
-    document.getElementById('draftCostPerYield').textContent=money(c.per);
-    document.getElementById('draftCostPercent').textContent=pct(c.fc);
-    document.getElementById('draftGrossProfit').textContent=`${money(c.gp)} ｜ ${pct(c.margin)}`;
+    refreshOptions();
+    $('draftIngredientRows').innerHTML=state.draftIngredients.length?state.draftIngredients.map((x,index)=>{
+      const source=recipeSources().find(s=>s.kind==='preparation'?s.id===x.preparation_id:s.id===x.ingredient_id);
+      const d=componentDetails(x),label=source?recipeSourceLabel(source):'';
+      return `<tr><td><strong>${esc(x.chef_name||source?.name||'')}</strong></td>
+        <td><div class="component-quantity"><input type="number" min="0.001" step="any" aria-label="配料用量" value="${Number(x.quantity)}" onchange="updateDraftComponent(${index},'quantity',this.value)"/><input aria-label="配料单位" value="${esc(x.unit)}" placeholder="单位" onchange="updateDraftComponent(${index},'unit',this.value)"/></div></td>
+        <td><div class="ingredient-map-control"><input id="ingredientMap_${index}" list="recipeIngredientLibraryOptions" value="${esc(x._mapping_search||label)}" placeholder="搜索原材料 / 配方 / 供应商" oninput="state.draftIngredients[${index}]._mapping_search=this.value"/><button type="button" class="mini-btn map-btn" onclick="mapDraftIngredient(${index})">对应</button>${source?`<button type="button" class="mini-btn" onclick="clearDraftIngredientMapping(${index})">取消</button>`:''}</div>
+          <div class="mapping-status ${source?'mapped':'pending'}">${source?'已对应：'+esc(label):'待对应原材料或配方'}</div></td>
+        <td>${d.unitCost==null?'待完成':costAmount(d.unitCost,4)+' / '+esc(d.unit)}</td>
+        <td><input class="component-waste" type="number" min="0" max="99.9" step="0.1" aria-label="配料损耗百分比" value="${Number(x.waste_percent||0)}" onchange="updateDraftComponent(${index},'waste_percent',this.value)"/></td>
+        <td>${d.issue?'<span class="warn">'+esc(d.issue)+'</span>':costAmount(d.cost)}</td>
+        <td><button type="button" class="mini-btn danger-btn" onclick="removeDraftIngredient(${index})">删除</button></td></tr>`;
+    }).join(''):'<tr><td colspan="7">输入主厨配料，或选择已建立的原材料 / 配方</td></tr>';
+    updateCostSummary('draftCost',draftCosting());
   };
-
-  refreshIngredientLibraryOptions();
+  refreshOptions();
 })();

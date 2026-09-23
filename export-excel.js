@@ -4,7 +4,7 @@
 
   const round=(n,d=2)=>Number(Number(n||0).toFixed(d));
   const categoryName=r=>state.categories.find(x=>x.id===r.category_id)?.name||'';
-  const hasCosting=r=>state.recipeIngredients.some(x=>x.recipe_id===r.id);
+  const hasCosting=r=>costingFor(r).complete;
 
   function recipePriceText(r){
     if(typeof sellingPriceLabel==='function')return sellingPriceLabel(r.selling_price,r);
@@ -70,23 +70,43 @@
         .filter(x=>x.recipe_id===r.id)
         .sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0));
       items.forEach(x=>{
-        const i=state.ingredients.find(y=>y.id===x.ingredient_id);
+        const d=componentDetails(x);
+        const source=x.preparation_id?state.preparations.find(y=>y.id===x.preparation_id):state.ingredients.find(y=>y.id===x.ingredient_id);
         result.push({
           '菜品代号':r.code||'',
           '中文菜名':r.name_cn||'',
           '英文菜名':r.name_en||'',
           '分类':categoryName(r),
-          '原材料':i?.name||'',
-          '原材料英文名':i?.name_en||'',
+          '主厨配料':x.chef_name||d.name||'',
+          '配料类型':d.type,
+          '对应原材料或配方':d.name||'',
+          '英文名称':source?.name_en||'',
           '用量':Number(x.quantity||0),
           '单位':x.unit||'',
           '损耗 %':round(x.waste_percent||0,1),
-          '原材料单位成本':i?round(unitCost(i),3):0,
-          '配料成本':round(ingredientCost(x),2)
+          '配料单位成本':d.unitCost==null?'':round(d.unitCost,4),
+          '成本单位':d.unit||'',
+          '配料成本':d.cost==null?'':round(d.cost,2),
+          '状态':d.issue||'已计算'
         });
       });
     });
     return result;
+  }
+
+  function buildPreparationRows(){
+    return state.preparations.map(p=>{
+      const c=preparationCosting(p);
+      return {'配方名称':p.name,'英文名称':p.name_en,'分类':p.category,'实际产出量':Number(p.output_quantity),'产出单位':p.output_unit,
+        '每批成本':c.complete?round(c.total,2):'','单位成本':c.complete?round(c.per,4):'','用于菜品':preparationRecipeNames(p.id).join('、'),'制作方法':p.method,'备注':p.notes,'状态':c.complete?'已计算':'待完成'};
+    });
+  }
+  function buildPreparationDetails(){
+    return state.preparationIngredients.map(x=>{
+      const p=state.preparations.find(y=>y.id===x.preparation_id),d=rawComponentDetails(x);
+      return {'配方名称':p?.name||'','原材料':d.name,'用量':Number(x.quantity),'单位':x.unit,'损耗 %':Number(x.waste_percent),
+        '单位成本':d.unitCost==null?'':round(d.unitCost,4),'成本单位':d.unit||'','配料成本':d.cost==null?'':round(d.cost,2),'状态':d.issue||'已计算'};
+    });
   }
 
   async function buildPriceHistoryRows(){
@@ -158,13 +178,18 @@
       setWidths(wsIngredients,[24,32,28,12,12,12,10,14,18,16,12,14,32]);
 
       const wsDetails=XLSX.utils.json_to_sheet(detailRows.length?detailRows:[{
-        '菜品代号':'','中文菜名':'','英文菜名':'','分类':'','原材料':'','原材料英文名':'',
-        '用量':'','单位':'','损耗 %':'','原材料单位成本':'','配料成本':''
+        '菜品代号':'','中文菜名':'','英文菜名':'','分类':'','主厨配料':'','配料类型':'','对应原材料或配方':'','英文名称':'',
+        '用量':'','单位':'','损耗 %':'','配料单位成本':'','成本单位':'','配料成本':'','状态':''
       }]);
-      setWidths(wsDetails,[12,24,36,28,24,32,10,10,10,16,12]);
+      setWidths(wsDetails,[12,24,36,28,24,12,24,32,10,10,10,16,12,12,30]);
 
       XLSX.utils.book_append_sheet(wb,wsRecipes,'食谱');
       XLSX.utils.book_append_sheet(wb,wsIngredients,'原材料');
+      const prepRows=buildPreparationRows(),prepDetails=buildPreparationDetails();
+      const wsPreparations=XLSX.utils.json_to_sheet(prepRows.length?prepRows:[{'配方名称':'','英文名称':'','分类':'','实际产出量':'','产出单位':'','每批成本':'','单位成本':'','用于菜品':'','制作方法':'','备注':'','状态':''}]);
+      const wsPreparationDetails=XLSX.utils.json_to_sheet(prepDetails.length?prepDetails:[{'配方名称':'','原材料':'','用量':'','单位':'','损耗 %':'','单位成本':'','成本单位':'','配料成本':'','状态':''}]);
+      setWidths(wsPreparations,[24,28,18,14,12,14,14,40,50,32,14]);setWidths(wsPreparationDetails,[24,28,12,12,12,14,12,14,32]);
+      XLSX.utils.book_append_sheet(wb,wsPreparations,'配方半成品');XLSX.utils.book_append_sheet(wb,wsPreparationDetails,'配方原材料明细');
       const wsPriceHistory=XLSX.utils.json_to_sheet(priceHistoryRows.length?priceHistoryRows:[{
         '修改时间':'','原材料':'','英文名称':'','供应商':'','采购规格':'','原价格':'','新价格':'',
         '变动金额':'','变动百分比 %':'','原单价':'','新单价':'','单价单位':'','修改人':''
