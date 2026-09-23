@@ -24,7 +24,7 @@ function renderPreparations(){
       <td>${esc(p.category||'-')}</td><td>${Number(p.output_quantity)} ${esc(p.output_unit)}</td><td>${costAmount(c.total)}</td>
       <td>${costAmount(c.per,4)}${c.complete?' / '+esc(p.output_unit):''}</td><td title="${esc(uses.join('、'))}">${uses.length} 道菜</td>
       <td><div class="action-row"><button class="mini-btn" onclick="editPreparation('${p.id}')">编辑</button><button class="mini-btn danger-btn" onclick="deletePreparation('${p.id}')">删除</button></div></td></tr>`;
-  }).join(''):q?'<tr><td colspan="7">找不到符合条件的配方</td></tr>':'<tr><td colspan="7" class="muted">还没有配方。点击「新增配方」，建立味水、酱料或上汤，之后便可加入菜品。</td></tr>';
+  }).join(''):q?'<tr><td colspan="7">找不到符合条件的配方</td></tr>':'';
 }
 function fillPreparationIngredients(){
   const old=$('preparationIngredient').value;
