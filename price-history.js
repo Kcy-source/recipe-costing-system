@@ -15,17 +15,31 @@
 
   const priceText=(gross,gst)=>{
     const n=net(gross,gst);
-    return '
+    return '$'+n.toFixed(2);
+  };
+
+  const unitPrice=(gross,gst,baseQuantity,yieldPercent)=>{
+    const qty=Number(baseQuantity||0);
+    const y=Number(yieldPercent||100)/100;
+    if(qty<=0||y<=0)return null;
+    return net(gross,gst)/(qty*y);
+  };
 
   const timeText=value=>{
     if(!value)return '-';
     try{
       return new Date(value).toLocaleString('zh-SG',{
         timeZone:'Asia/Singapore',
-        year:'numeric',month:'2-digit',day:'2-digit',
-        hour:'2-digit',minute:'2-digit',hour12:false
+        year:'numeric',
+        month:'2-digit',
+        day:'2-digit',
+        hour:'2-digit',
+        minute:'2-digit',
+        hour12:false
       });
-    }catch{return String(value);}
+    }catch{
+      return String(value);
+    }
   };
 
   function render(){
@@ -34,6 +48,7 @@
 
     const filtered=history.filter(h=>{
       if(!q)return true;
+
       const ingredient=String(h.ingredients?.name||'').toLowerCase();
       const ingredientEn=String(h.ingredients?.name_en||'').toLowerCase();
       const supplier=String(h.supplier||'').toLowerCase();
@@ -42,7 +57,11 @@
       if(mode==='ingredient')return ingredient.includes(q)||ingredientEn.includes(q);
       if(mode==='supplier')return supplier.includes(q);
       if(mode==='user')return user.includes(q);
-      return ingredient.includes(q)||ingredientEn.includes(q)||supplier.includes(q)||user.includes(q);
+
+      return ingredient.includes(q)
+        ||ingredientEn.includes(q)
+        ||supplier.includes(q)
+        ||user.includes(q);
     });
 
     rows.innerHTML=filtered.length?filtered.map(h=>{
@@ -54,28 +73,38 @@
       const sign=diff>0?'+':'';
       const ingredient=h.ingredients||{};
       const spec=`${Number(h.purchase_quantity||0)} ${esc(h.purchase_unit||'')}`;
+
+      const oldUnit=unitPrice(h.old_purchase_price,h.old_gst_percent,h.base_quantity,h.yield_percent);
+      const newUnit=unitPrice(h.new_purchase_price,h.new_gst_percent,h.base_quantity,h.yield_percent);
+      const unit=esc(h.base_unit||'unit');
+      const unitText=(oldUnit===null||newUnit===null)
+        ? '-'
+        : `$${oldUnit.toFixed(3)} → $${newUnit.toFixed(3)} / ${unit}`;
+
       return `<tr>
         <td>${esc(timeText(h.created_at))}</td>
-        <td><strong>${esc(ingredient.name||'')}</strong>${ingredient.name_en?`<br><span class="muted">${esc(ingredient.name_en)}</span>`:''}</td>
+        <td>
+          <strong>${esc(ingredient.name||'')}</strong>
+          ${ingredient.name_en?`<br><span class="muted">${esc(ingredient.name_en)}</span>`:''}
+        </td>
         <td>${esc(h.supplier||'-')}</td>
         <td>${spec}</td>
         <td>${priceText(h.old_purchase_price,h.old_gst_percent)}</td>
         <td><strong>${priceText(h.new_purchase_price,h.new_gst_percent)}</strong></td>
-        <td class="${cls}">${sign}${diff.toFixed(2)}${oldNet!==0?` (${sign}${pctChange.toFixed(1)}%)`:''}</td>
-        <td>${(()=>{
-          const oldUnit=unitPrice(h.old_purchase_price,h.old_gst_percent,h.base_quantity,h.yield_percent);
-          const newUnit=unitPrice(h.new_purchase_price,h.new_gst_percent,h.base_quantity,h.yield_percent);
-          const unit=esc(h.base_unit||'unit');
-          if(oldUnit===null||newUnit===null)return '-';
-          return `${oldUnit.toFixed(3)} → ${newUnit.toFixed(3)} / ${unit}`;
-        })()}</td>
+        <td class="${cls}">
+          ${sign}$${diff.toFixed(2)}
+          ${oldNet!==0?` (${sign}${pctChange.toFixed(1)}%)`:''}
+        </td>
+        <td>${unitText}</td>
         <td>${esc(h.changed_by||'-')}</td>
       </tr>`;
-    }).join(''):'<tr><td colspan="9" class="muted">找不到符合条件的价格变动记录</td></tr>';
+    }).join('')
+    :'<tr><td colspan="9" class="muted">找不到符合条件的价格变动记录</td></tr>';
   }
 
   async function loadPriceHistory(){
     rows.innerHTML='<tr><td colspan="9" class="muted">正在读取价格变动记录...</td></tr>';
+
     const {data,error}=await sb
       .from('ingredient_price_history')
       .select('id,ingredient_id,purchase_price,purchase_quantity,purchase_unit,supplier,effective_date,created_at,old_purchase_price,new_purchase_price,old_gst_percent,new_gst_percent,changed_by,change_type,base_unit,base_quantity,yield_percent,ingredients(name,name_en)')
@@ -96,95 +125,11 @@
   searchInput.addEventListener('input',render);
   searchMode.addEventListener('change',render);
   nav.addEventListener('click',loadPriceHistory);
+
   document.getElementById('refreshBtn')?.addEventListener('click',()=>{
-    if(!document.getElementById('priceHistoryView')?.classList.contains('hidden'))loadPriceHistory();
-  });
-
-  window.loadPriceHistory=loadPriceHistory;
-})();+n.toFixed(2);
-  };
-
-  const unitPrice=(gross,gst,baseQuantity,yieldPercent)=>{
-    const qty=Number(baseQuantity||0);
-    const y=Number(yieldPercent||100)/100;
-    if(qty<=0||y<=0)return null;
-    return net(gross,gst)/(qty*y);
-  };
-
-  const timeText=value=>{
-    if(!value)return '-';
-    try{
-      return new Date(value).toLocaleString('zh-SG',{
-        timeZone:'Asia/Singapore',
-        year:'numeric',month:'2-digit',day:'2-digit',
-        hour:'2-digit',minute:'2-digit',hour12:false
-      });
-    }catch{return String(value);}
-  };
-
-  function render(){
-    const q=(searchInput.value||'').trim().toLowerCase();
-    const mode=searchMode.value||'all';
-
-    const filtered=history.filter(h=>{
-      if(!q)return true;
-      const ingredient=String(h.ingredients?.name||'').toLowerCase();
-      const ingredientEn=String(h.ingredients?.name_en||'').toLowerCase();
-      const supplier=String(h.supplier||'').toLowerCase();
-      const user=String(h.changed_by||'').toLowerCase();
-
-      if(mode==='ingredient')return ingredient.includes(q)||ingredientEn.includes(q);
-      if(mode==='supplier')return supplier.includes(q);
-      if(mode==='user')return user.includes(q);
-      return ingredient.includes(q)||ingredientEn.includes(q)||supplier.includes(q)||user.includes(q);
-    });
-
-    rows.innerHTML=filtered.length?filtered.map(h=>{
-      const oldNet=net(h.old_purchase_price,h.old_gst_percent);
-      const newNet=net(h.new_purchase_price,h.new_gst_percent);
-      const diff=newNet-oldNet;
-      const pctChange=oldNet!==0?(diff/oldNet*100):0;
-      const cls=diff>0?'price-change-up':diff<0?'price-change-down':'price-change-flat';
-      const sign=diff>0?'+':'';
-      const ingredient=h.ingredients||{};
-      const spec=`${Number(h.purchase_quantity||0)} ${esc(h.purchase_unit||'')}`;
-      return `<tr>
-        <td>${esc(timeText(h.created_at))}</td>
-        <td><strong>${esc(ingredient.name||'')}</strong>${ingredient.name_en?`<br><span class="muted">${esc(ingredient.name_en)}</span>`:''}</td>
-        <td>${esc(h.supplier||'-')}</td>
-        <td>${spec}</td>
-        <td>${priceText(h.old_purchase_price,h.old_gst_percent)}</td>
-        <td><strong>${priceText(h.new_purchase_price,h.new_gst_percent)}</strong></td>
-        <td class="${cls}">${sign}$${diff.toFixed(2)}${oldNet!==0?` (${sign}${pctChange.toFixed(1)}%)`:''}</td>
-        <td>${esc(h.changed_by||'-')}</td>
-      </tr>`;
-    }).join(''):'<tr><td colspan="9" class="muted">找不到符合条件的价格变动记录</td></tr>';
-  }
-
-  async function loadPriceHistory(){
-    rows.innerHTML='<tr><td colspan="9" class="muted">正在读取价格变动记录...</td></tr>';
-    const {data,error}=await sb
-      .from('ingredient_price_history')
-      .select('id,ingredient_id,purchase_price,purchase_quantity,purchase_unit,supplier,effective_date,created_at,old_purchase_price,new_purchase_price,old_gst_percent,new_gst_percent,changed_by,change_type,ingredients(name,name_en)')
-      .order('created_at',{ascending:false})
-      .limit(1000);
-
-    if(error){
-      console.error(error);
-      rows.innerHTML='<tr><td colspan="9" class="warn">价格变动记录读取失败</td></tr>';
-      toast(error.message);
-      return;
+    if(!document.getElementById('priceHistoryView')?.classList.contains('hidden')){
+      loadPriceHistory();
     }
-
-    history=data||[];
-    render();
-  }
-
-  searchInput.addEventListener('input',render);
-  searchMode.addEventListener('change',render);
-  nav.addEventListener('click',loadPriceHistory);
-  document.getElementById('refreshBtn')?.addEventListener('click',()=>{
-    if(!document.getElementById('priceHistoryView')?.classList.contains('hidden'))loadPriceHistory();
   });
 
   window.loadPriceHistory=loadPriceHistory;
