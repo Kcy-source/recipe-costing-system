@@ -54,7 +54,7 @@ function switchView(name){document.querySelectorAll('.nav-btn').forEach(x=>x.cla
 async function loadAll(){const [a,b,c,d]=await Promise.all([sb.from('ingredients').select('*').order('name'),sb.from('recipes').select('*').order('name_cn'),sb.from('recipe_categories').select('*').order('sort_order'),sb.from('recipe_ingredients').select('*').order('sort_order')]);const err=a.error||b.error||c.error||d.error;if(err)return toast(err.message);state.ingredients=a.data||[];state.recipes=b.data||[];state.categories=c.data||[];state.recipeIngredients=d.data||[];renderAll();}
 function renderAll(){renderIngredients();renderRecipes();renderDashboard();fillSelectors();}
 function renderIngredients(){$('ingredientRows').innerHTML=state.ingredients.length?state.ingredients.map(i=>`<tr><td><strong>${esc(i.name)}</strong></td><td>${esc(i.category)}</td><td>${Number(i.purchase_quantity)} ${esc(i.purchase_unit)}</td><td>${money(i.purchase_price)}</td><td>${pct(i.yield_percent)}</td><td>${money(unitCost(i))}/${esc(i.base_unit)}</td><td><div class="action-row"><button class="mini-btn" onclick="editIngredient('${i.id}')">编辑</button><button class="mini-btn danger-btn" onclick="deleteIngredient('${i.id}')">删除</button></div></td></tr>`).join(''):'<tr><td colspan="7">还没有原材料</td></tr>';}
-function renderRecipes(){$('recipeRows').innerHTML=state.recipes.length?state.recipes.map(r=>{const c=costingFor(r),cat=state.categories.find(x=>x.id===r.category_id)?.name||'';return`<tr><td><strong>${esc(r.name_cn)}</strong><br><span class="muted">${esc(r.name_en)}</span></td><td>${esc(cat)}</td><td>${sellingPriceLabel(r.selling_price,r)}</td><td>${money(c.per)}</td><td class="${c.fc<=Number(r.target_food_cost_percent||30)?'good':'warn'}">${pct(c.fc)}</td><td>${money(c.gp)}<br><span class="muted">${pct(c.margin)}</span></td><td><div class="action-row"><button class="mini-btn" onclick="editRecipe('${r.id}')">编辑</button><button class="mini-btn danger-btn" onclick="deleteRecipe('${r.id}')">删除</button></div></td></tr>`}).join(''):'<tr><td colspan="7">还没有食谱</td></tr>';}
+function renderRecipes(){$('recipeRows').innerHTML=state.recipes.length?state.recipes.map(r=>{const c=costingFor(r),cat=state.categories.find(x=>x.id===r.category_id)?.name||'';return`<tr><td><strong>${esc(r.name_cn)}</strong><br><span class="muted">${esc(r.name_en)}</span></td><td>${esc(cat)}</td><td>${sellingPriceLabel(r.selling_price,r)}</td><td>${money(c.per)}</td><td class="${c.fc<=Number(r.target_food_cost_percent||30)?'good':'warn'}">${pct(c.fc)}</td><td>${money(c.gp)}<br><span class="muted">${pct(c.margin)}</span></td><td><div class="action-row"><button class="mini-btn" onclick="editRecipe('${r.id}')">添加配料</button><button class="mini-btn danger-btn" onclick="deleteRecipe('${r.id}')">删除</button></div></td></tr>`}).join(''):'<tr><td colspan="7">还没有食谱</td></tr>';}
 let dashboardSortKey=localStorage.getItem('dashboardSortKey')||'code';
 let dashboardSortDir=localStorage.getItem('dashboardSortDir')||'asc';
 
@@ -159,7 +159,7 @@ function renderDashboard(){
   $('dashboardRows').innerHTML=filtered.length?filtered.map(r=>{
     const c=costingFor(r);
     const cat=state.categories.find(x=>x.id===r.category_id)?.name||'';
-    const hasIngredients=state.recipeIngredients.some(x=>x.recipe_id===r.id);
+    const hasIngredients=state.recipeIngredients.some(x=>x.recipe_id===r.id&&x.ingredient_id);
     if(hasIngredients){
       fc.push(c.fc);
       m.push(c.margin);
@@ -264,7 +264,28 @@ window.deleteRecipe=async id=>{if(!confirm('确定删除这个食谱？'))return
 
 window.openCosting=id=>{const r=state.recipes.find(x=>x.id===id);if(!r)return;state.currentRecipe=r;const addRow=$('costingDialog').querySelector('.ingredient-add-row');if(addRow)addRow.style.display='';$('costingTitle').textContent=r.name_cn;$('costingMeta').textContent=`售价 ${sellingPriceLabel(r.selling_price,r)} · 出品 ${r.recipe_yield} ${r.yield_unit}`;renderCosting();$('costingDialog').showModal();};
 window.openCostingView=id=>{openCosting(id);const addRow=$('costingDialog').querySelector('.ingredient-add-row');if(addRow)addRow.style.display='none';$('costingRows').querySelectorAll('.danger-btn').forEach(b=>b.style.display='none');};
-function renderCosting(){const r=state.currentRecipe,c=costingFor(r),rows=state.recipeIngredients.filter(x=>x.recipe_id===r.id);$('costTotal').textContent=money(c.total);$('costPerYield').textContent=money(c.per);$('costPercent').textContent=pct(c.fc);$('grossProfit').textContent=`${money(c.gp)} ｜ ${pct(c.margin)}`;$('costingRows').innerHTML=rows.length?rows.map(x=>{const i=state.ingredients.find(y=>y.id===x.ingredient_id);return`<tr><td>${esc(i?.name||'')}</td><td>${Number(x.quantity)} ${esc(x.unit)}</td><td>${money(i?unitCost(i):0)}/${esc(i?.base_unit||'')}</td><td>${pct(x.waste_percent)}</td><td>${money(ingredientCost(x))}</td><td><button class="mini-btn danger-btn" onclick="removeRecipeIngredient('${x.id}')">删除</button></td></tr>`}).join(''):'<tr><td colspan="6">还没有配料</td></tr>';}
+function renderCosting(){
+  const r=state.currentRecipe,c=costingFor(r),rows=state.recipeIngredients.filter(x=>x.recipe_id===r.id);
+  $('costTotal').textContent=money(c.total);
+  $('costPerYield').textContent=money(c.per);
+  $('costPercent').textContent=pct(c.fc);
+  $('grossProfit').textContent=`${money(c.gp)} ｜ ${pct(c.margin)}`;
+  $('costingRows').innerHTML=rows.length?rows.map(x=>{
+    const i=state.ingredients.find(y=>y.id===x.ingredient_id);
+    const chefName=x.chef_name||i?.name||'';
+    const mapped=i
+      ?`<br><span class="muted">对应：${esc(i.name)}${i.supplier?` · ${esc(i.supplier)}`:''}</span>`
+      :'<br><span class="warn">待对应原材料</span>';
+    return `<tr>
+      <td><strong>${esc(chefName)}</strong>${mapped}</td>
+      <td>${Number(x.quantity)} ${esc(x.unit)}</td>
+      <td>${i?`${money(unitCost(i))}/${esc(i.base_unit||'')}`:'待对应'}</td>
+      <td>${pct(x.waste_percent)}</td>
+      <td>${i?money(ingredientCost(x)):'0.00'}</td>
+      <td><button class="mini-btn danger-btn" onclick="removeRecipeIngredient('${x.id}')">删除</button></td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="6">还没有配料</td></tr>';
+}
 $('addRecipeIngredientBtn').onclick=async()=>{if(!state.currentRecipe)return;const ingredient_id=$('costIngredient').value,quantity=Number($('costQuantity').value),unit=$('costUnit').value,waste_percent=Number($('costWaste').value||0);if(!ingredient_id||quantity<=0)return toast('请选择配料并输入用量');const{error}=await sb.from('recipe_ingredients').insert({recipe_id:state.currentRecipe.id,ingredient_id,quantity,unit,waste_percent,sort_order:state.recipeIngredients.filter(x=>x.recipe_id===state.currentRecipe.id).length});if(error)return toast(error.message);$('costQuantity').value='';await loadAll();state.currentRecipe=state.recipes.find(x=>x.id===state.currentRecipe.id);renderCosting();};
 window.removeRecipeIngredient=async id=>{const currentId=state.currentRecipe?.id;const{error}=await sb.from('recipe_ingredients').delete().eq('id',id);if(error)return toast(error.message);await loadAll();state.currentRecipe=state.recipes.find(x=>x.id===currentId);if(state.currentRecipe)renderCosting();};
 
