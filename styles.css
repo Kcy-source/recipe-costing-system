@@ -58,3 +58,13 @@ body.dashboard-resizing{cursor:col-resize!important;user-select:none!important}
 @media(max-width:700px){.account-add-row{grid-template-columns:1fr}}
 
 @media(max-width:600px){.dashboard-search-row{grid-template-columns:1fr}}
+
+.price-history-search-row{padding:16px 20px 8px;display:grid;grid-template-columns:160px 1fr;gap:10px}
+#priceHistorySearchMode,#priceHistorySearchInput{font-size:15px;padding:12px 13px}
+.price-history-table-wrap{max-height:calc(100vh - 250px);overflow:auto}
+#priceHistoryView table{min-width:1050px}
+#priceHistoryView thead th{position:sticky;top:0;z-index:20;background:#fafbfc;box-shadow:0 1px 0 #e5e7eb;white-space:nowrap}
+.price-change-up{color:#b42318;font-weight:700}
+.price-change-down{color:#067647;font-weight:700}
+.price-change-flat{color:#667085}
+@media(max-width:600px){.price-history-search-row{grid-template-columns:1fr}}
