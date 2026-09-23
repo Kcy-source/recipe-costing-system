@@ -89,11 +89,54 @@
     return result;
   }
 
+  async function buildPriceHistoryRows(){
+    const {data,error}=await sb
+      .from('ingredient_price_history')
+      .select('id,ingredient_id,purchase_quantity,purchase_unit,supplier,created_at,old_purchase_price,new_purchase_price,old_gst_percent,new_gst_percent,changed_by,base_unit,base_quantity,yield_percent,ingredients(name,name_en)')
+      .order('created_at',{ascending:false})
+      .limit(5000);
+
+    if(error)throw error;
+
+    const net=(gross,gst)=>{
+      const g=Number(gross||0);
+      const rate=Number(gst||0);
+      return rate>0?g/(1+rate/100):g;
+    };
+
+    return (data||[]).map(h=>{
+      const oldNet=net(h.old_purchase_price,h.old_gst_percent);
+      const newNet=net(h.new_purchase_price,h.new_gst_percent);
+      const diff=newNet-oldNet;
+      const pctChange=oldNet!==0?diff/oldNet*100:'';
+      const qty=Number(h.base_quantity||0);
+      const y=Number(h.yield_percent||100)/100;
+      const oldUnit=qty>0&&y>0?oldNet/(qty*y):'';
+      const newUnit=qty>0&&y>0?newNet/(qty*y):'';
+
+      return {
+        '修改时间':h.created_at?new Date(h.created_at).toLocaleString('zh-SG',{timeZone:'Asia/Singapore'}):'',
+        '原材料':h.ingredients?.name||'',
+        '英文名称':h.ingredients?.name_en||'',
+        '供应商':h.supplier||'',
+        '采购规格':`${Number(h.purchase_quantity||0)} ${h.purchase_unit||''}`,
+        '原价格':round(oldNet,2),
+        '新价格':round(newNet,2),
+        '变动金额':round(diff,2),
+        '变动百分比 %':pctChange===''?'':round(pctChange,1),
+        '原单价':oldUnit===''?'':round(oldUnit,3),
+        '新单价':newUnit===''?'':round(newUnit,3),
+        '单价单位':h.base_unit||'',
+        '修改人':h.changed_by||''
+      };
+    });
+  }
+
   function setWidths(ws,widths){
     ws['!cols']=widths.map(w=>({wch:w}));
   }
 
-  btn.addEventListener('click',()=>{
+  btn.addEventListener('click',async()=>{
     if(typeof XLSX==='undefined')return toast('Excel 导出组件加载失败，请刷新页面再试');
 
     const old=btn.textContent;
@@ -106,6 +149,7 @@
       const recipeRows=buildRecipeRows();
       const ingredientRows=buildIngredientRows();
       const detailRows=buildDetailRows();
+      const priceHistoryRows=await buildPriceHistoryRows();
 
       const wsRecipes=XLSX.utils.json_to_sheet(recipeRows);
       setWidths(wsRecipes,[10,28,24,38,18,12,10,10,14,12,12,12,12,12]);
@@ -121,7 +165,14 @@
 
       XLSX.utils.book_append_sheet(wb,wsRecipes,'食谱');
       XLSX.utils.book_append_sheet(wb,wsIngredients,'原材料');
+      const wsPriceHistory=XLSX.utils.json_to_sheet(priceHistoryRows.length?priceHistoryRows:[{
+        '修改时间':'','原材料':'','英文名称':'','供应商':'','采购规格':'','原价格':'','新价格':'',
+        '变动金额':'','变动百分比 %':'','原单价':'','新单价':'','单价单位':'','修改人':''
+      }]);
+      setWidths(wsPriceHistory,[20,24,30,28,14,12,12,12,14,12,12,12,28]);
+
       XLSX.utils.book_append_sheet(wb,wsDetails,'食谱配料明细');
+      XLSX.utils.book_append_sheet(wb,wsPriceHistory,'价格变动记录');
 
       const now=new Date();
       const y=now.getFullYear();
