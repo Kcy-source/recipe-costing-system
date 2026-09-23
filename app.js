@@ -46,7 +46,7 @@ $('refreshBtn').onclick=async()=>{
     btn.textContent=oldText;
   }
 };
-$('dashboardSearchInput')?.addEventListener('input',renderDashboard);
+$('dashboardSearchInput')?.addEventListener('input',renderDashboard);$('dashboardSearchMode')?.addEventListener('change',renderDashboard);
 
 document.querySelectorAll('.nav-btn').forEach(b=>b.onclick=()=>switchView(b.dataset.view));
 function switchView(name){document.querySelectorAll('.nav-btn').forEach(x=>x.classList.toggle('active',x.dataset.view===name));document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));$(name+'View').classList.remove('hidden');const map={dashboard:['总览','查看食谱与成本概况'],ingredients:['原材料','管理采购价、规格与净料率'],recipes:['食谱 / Costing','建立菜品食谱并自动计算成本'],management:['管理设置','管理系统登录账号']};$('pageTitle').textContent=map[name][0];$('pageSubtitle').textContent=map[name][1];}
@@ -144,13 +144,17 @@ function setupDashboardSorting(){
 function renderDashboard(){
   let fc=[],m=[];
   const q=($('dashboardSearchInput')?.value||'').trim().toLowerCase();
+  const mode=$('dashboardSearchMode')?.value||'all';
   const filtered=sortDashboardRecipes(state.recipes.filter(r=>{
     if(!q)return true;
-    const categoryName=state.categories.find(x=>x.id===r.category_id)?.name||'';
-    return String(r.code||'').toLowerCase().includes(q)
-      ||String(r.name_cn||'').toLowerCase().includes(q)
-      ||String(r.name_en||'').toLowerCase().includes(q)
-      ||String(categoryName).toLowerCase().includes(q);
+    const code=String(r.code||'').toLowerCase();
+    const nameCn=String(r.name_cn||'').toLowerCase();
+    const nameEn=String(r.name_en||'').toLowerCase();
+    const categoryName=String(state.categories.find(x=>x.id===r.category_id)?.name||'').toLowerCase();
+    if(mode==='name')return nameCn.includes(q)||nameEn.includes(q);
+    if(mode==='code')return code.includes(q);
+    if(mode==='category')return categoryName.includes(q);
+    return code.includes(q)||nameCn.includes(q)||nameEn.includes(q)||categoryName.includes(q);
   }));
   $('dashboardRows').innerHTML=filtered.length?filtered.map(r=>{
     const c=costingFor(r);
