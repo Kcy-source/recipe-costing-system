@@ -21,8 +21,8 @@
   .top-user-box{display:flex}
 }
 
-.dashboard-search-row{padding:16px 20px 8px}
-#dashboardSearchInput{font-size:16px;padding:13px 14px}
+.dashboard-search-row{padding:16px 20px 8px;display:grid;grid-template-columns:160px 1fr;gap:10px}
+#dashboardSearchInput{font-size:16px;padding:13px 14px}#dashboardSearchMode{font-size:15px;padding:13px 12px}
 #dashboardView .table-wrap{max-height:calc(100vh - 330px);overflow:auto}
 #dashboardView thead th{position:sticky;top:0;z-index:20;background:#fafbfc;box-shadow:0 1px 0 #e5e7eb}
 
@@ -56,3 +56,5 @@ body.dashboard-resizing{cursor:col-resize!important;user-select:none!important}
 .account-active{color:#067647;font-weight:700}
 .account-disabled{color:#b42318;font-weight:700}
 @media(max-width:700px){.account-add-row{grid-template-columns:1fr}}
+
+@media(max-width:600px){.dashboard-search-row{grid-template-columns:1fr}}
