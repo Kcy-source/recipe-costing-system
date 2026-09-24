@@ -97,13 +97,27 @@
         </td>
         <td>${unitText}</td>
         <td>${esc(h.changed_by||'-')}</td>
+        <td><button type="button" class="mini-btn danger-btn" data-price-history-delete="${esc(h.id)}" title="只删除这条历史记录，不更改原材料当前价格">删除</button></td>
       </tr>`;
     }).join('')
-    :'<tr><td colspan="9" class="muted">找不到符合条件的价格变动记录</td></tr>';
+    :'<tr><td colspan="10" class="muted">找不到符合条件的价格变动记录</td></tr>';
+  }
+
+  async function deletePriceHistoryEntry(id){
+    const entry=history.find(item=>String(item.id)===String(id));
+    if(!entry)return;
+    const name=entry.ingredients?.name||'这项原材料';
+    if(!confirm(`确定删除「${name}」在 ${timeText(entry.created_at)} 的价格变动记录吗？只会删除历史记录，不会更改当前采购价。`))return;
+    const {data,error}=await sb.from('ingredient_price_history').delete().eq('id',entry.id).select('id').maybeSingle();
+    if(error){toast('删除失败：'+error.message);return;}
+    if(!data){toast('这条记录已不存在或无法删除，请刷新后再试');await loadPriceHistory();return;}
+    history=history.filter(item=>String(item.id)!==String(entry.id));
+    render();
+    toast('价格变动记录已删除，当前采购价未变');
   }
 
   async function loadPriceHistory(){
-    rows.innerHTML='<tr><td colspan="9" class="muted">正在读取价格变动记录...</td></tr>';
+    rows.innerHTML='<tr><td colspan="10" class="muted">正在读取价格变动记录...</td></tr>';
 
     const {data,error}=await sb
       .from('ingredient_price_history')
@@ -113,7 +127,7 @@
 
     if(error){
       console.error(error);
-      rows.innerHTML='<tr><td colspan="9" class="warn">价格变动记录读取失败</td></tr>';
+      rows.innerHTML='<tr><td colspan="10" class="warn">价格变动记录读取失败</td></tr>';
       toast(error.message);
       return;
     }
@@ -124,6 +138,10 @@
 
   searchInput.addEventListener('input',render);
   searchMode.addEventListener('change',render);
+  rows.addEventListener('click',event=>{
+    const button=event.target.closest('[data-price-history-delete]');
+    if(button)deletePriceHistoryEntry(button.dataset.priceHistoryDelete);
+  });
   nav.addEventListener('click',loadPriceHistory);
 
   document.getElementById('refreshBtn')?.addEventListener('click',()=>{
