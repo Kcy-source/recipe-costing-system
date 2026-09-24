@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>品珍宫 · 食谱 Costing 管理</title><link rel="stylesheet" href="styles.css?v=prep-mapping-1"/></head>
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>品珍宫 · 食谱 Costing 管理</title><link rel="stylesheet" href="styles.css?v=prep-header-1"/></head>
 <body><div id="toast"></div>
 <section id="authView" class="auth-wrap"><div class="auth-card"><div class="brand-mark">YP</div><h1>食谱 Costing 管理系统</h1><p class="muted">Yummy Palace · 云端食谱与成本管理</p><form id="authForm" class="stack"><label>邮箱<input id="email" type="email" required placeholder="name@example.com"/></label><label>密码<input id="password" type="password" minlength="6" required placeholder="至少 6 位"/></label><button class="primary" type="submit">登录</button></form><p class="hint">账号由管理员统一建立。拿到账号和密码后可直接登录。</p></div></section>
 <section id="appView" class="app hidden"><aside class="sidebar"><div><div class="brand-row"><div class="brand-mark small">YP</div><div><strong>品珍宫</strong><span>Recipe Costing</span></div></div><nav><button class="nav-btn active" data-view="dashboard">总览</button><button class="nav-btn" data-view="ingredients">原材料</button><button class="nav-btn" data-view="preparations">配方 / 半成品</button><button class="nav-btn" data-view="recipes">食谱 / Costing</button><button class="nav-btn" data-view="priceHistory">价格变动记录</button><button id="managementNavBtn" class="nav-btn hidden" data-view="management">管理设置</button></nav></div></aside><main class="main"><header class="topbar"><div><h2 id="pageTitle">总览</h2><p id="pageSubtitle">查看食谱与成本概况</p></div><div class="topbar-actions"><div class="user-box top-user-box"><span id="userEmail"></span><button id="logoutBtn" class="text-btn">退出登录</button></div><button id="exportExcelBtn" class="secondary compact">导出 Excel</button><button id="refreshBtn" class="secondary compact">刷新资料</button></div></header>
@@ -71,10 +71,11 @@
   <p class="hint">填写熬煮、过滤后实际可用的产出量。每批原材料总成本 ÷ 实际产出量 = 单位成本。</p>
   <label>制作方法<textarea id="preparationMethod" rows="3"></textarea></label>
   <label>备注<input id="preparationNotes"/></label>
-  <div class="recipe-material-section"><div class="panel-head"><h3>配方原材料</h3></div>
+  <div class="recipe-material-section"><div class="preparation-material-header"><div class="panel-head"><h3>配方原材料</h3></div>
     <div class="ingredient-add-row chef-ingredient-add-row"><input id="preparationIngredient" list="preparationIngredientLibraryOptions" aria-label="食材名称" placeholder="输入食材名称，或选择原材料"/><input id="preparationQuantity" type="number" step="any" min="0.001" aria-label="原材料用量" placeholder="用量"/><input id="preparationIngredientUnit" aria-label="原材料用量单位" placeholder="单位（自行填写）"/><input id="preparationWaste" type="number" step="0.1" min="0" max="99.9" value="0" aria-label="损耗百分比" placeholder="损耗%"/><button id="addPreparationIngredientBtn" type="button" class="primary compact">+ 添加食材</button></div>
     <datalist id="preparationIngredientLibraryOptions"></datalist>
     <p class="hint preparation-hint">用量按原材料的 Costing 基础单位填写；支持 g ↔ kg、ml ↔ L 自动换算。其他自填单位须一致。</p>
+    </div>
     <div class="table-wrap recipe-ingredient-scroll" tabindex="0" role="region" aria-label="配方食材清单，可上下及左右滚动"><table class="recipe-ingredient-map-table"><thead><tr><th>主厨配料</th><th>用量</th><th>对应原材料</th><th>单位成本</th><th>损耗</th><th>成本</th><th>操作</th></tr></thead><tbody id="preparationIngredientRows"></tbody></table></div>
   </div>
   <div class="cost-summary preparation-summary"><div><span>每批成本</span><strong id="preparationTotal">待完成</strong></div><div><span>单位成本</span><strong id="preparationUnitCost">待完成</strong></div></div>

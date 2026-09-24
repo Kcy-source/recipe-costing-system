@@ -108,6 +108,19 @@ body.recipe-column-resizing,body.recipe-column-resizing *{cursor:col-resize!impo
 .component-waste{width:80px}
 #preparationForm>label{margin-bottom:12px}
 #preparationForm .dialog-head{margin-bottom:16px}
+/* Keep the preparation title and add controls attached to the dialog viewport. */
+#preparationDialog .recipe-material-section{overflow:visible;padding-top:0}
+#preparationDialog .preparation-material-header{
+  position:sticky;
+  top:0;
+  z-index:10;
+  display:flow-root;
+  background:#fff;
+  border-radius:13px 13px 0 0;
+  box-shadow:0 1px 0 #e5e7eb;
+}
+#preparationDialog .preparation-material-header>.panel-head{background:#fafbfc;border-radius:13px 13px 0 0}
+#preparationDialog .preparation-material-header>.ingredient-add-row{padding:14px 14px 0}
 :is(#recipeDialog,#preparationDialog) .component-quantity{grid-template-columns:repeat(2,minmax(0,1fr));min-width:0}
 :is(#recipeDialog,#preparationDialog) .ingredient-map-control{grid-template-columns:minmax(0,1fr) auto auto}
 :is(#recipeDialog,#preparationDialog) .recipe-ingredient-map-table input{min-width:0}
