@@ -49,7 +49,7 @@ $('refreshBtn').onclick=async()=>{
 $('dashboardSearchInput')?.addEventListener('input',renderDashboard);$('dashboardSearchMode')?.addEventListener('change',renderDashboard);
 
 document.querySelectorAll('.nav-btn').forEach(b=>b.onclick=()=>switchView(b.dataset.view));
-function switchView(name){document.querySelectorAll('.nav-btn').forEach(x=>x.classList.toggle('active',x.dataset.view===name));document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));$(name+'View').classList.remove('hidden');const map={dashboard:['总览','查看食谱与成本概况'],ingredients:['原材料','管理采购价、规格与净料率'],preparations:['配方 / 半成品','管理自制配方、实际产出与单位成本'],recipes:['食谱 / Costing','建立菜品食谱并自动计算成本'],priceHistory:['价格变动记录','查看原材料历史价格变动'],management:['管理设置','管理系统登录账号']};$('pageTitle').textContent=map[name][0];$('pageSubtitle').textContent=map[name][1];}
+function switchView(name){document.querySelectorAll('.nav-btn').forEach(x=>x.classList.toggle('active',x.dataset.view===name));document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));$(name+'View').classList.remove('hidden');const map={dashboard:['总览','查看食谱与成本概况'],ingredients:['原材料','管理采购价、规格与净料率'],preparations:['配方 / 半成品','管理自制配方、实际产出与单位成本'],recipes:['食谱 / 成本','建立菜品食谱并自动计算成本'],priceHistory:['价格变动记录','查看原材料历史价格变动'],management:['管理设置','管理系统登录账号']};$('pageTitle').textContent=map[name][0];$('pageSubtitle').textContent=map[name][1];}
 
 async function loadAll(){
   const tables=['ingredients','recipes','recipe_categories','recipe_ingredients','preparations','preparation_ingredients'];
