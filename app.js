@@ -275,6 +275,9 @@ window.openCosting=id=>{const r=state.recipes.find(x=>x.id===id);if(!r)return;st
 window.openCostingView=id=>{openCosting(id);const addRow=$('costingDialog').querySelector('.ingredient-add-row');if(addRow)addRow.style.display='none';$('costingRows').querySelectorAll('.danger-btn').forEach(b=>b.style.display='none');};
 function renderCosting(){
   const r=state.currentRecipe,c=costingFor(r),rows=state.recipeIngredients.filter(x=>x.recipe_id===r.id);
+  const notes=String(r.notes||'').trim();
+  $('costingNotesText').textContent=notes;
+  $('costingNotes').classList.toggle('hidden',!notes);
   updateCostSummary('cost',c);
   $('costingRows').innerHTML=rows.length?rows.map(x=>{
     const d=componentDetails(x);
@@ -287,4 +290,3 @@ function renderCosting(){
 
 $('addRecipeIngredientBtn').onclick=async()=>{if(!state.currentRecipe)return;const ingredient_id=$('costIngredient').value,quantity=Number($('costQuantity').value),unit=$('costUnit').value,waste_percent=Number($('costWaste').value||0);if(!ingredient_id||quantity<=0)return toast('请选择配料并输入用量');const{error}=await sb.from('recipe_ingredients').insert({recipe_id:state.currentRecipe.id,ingredient_id,quantity,unit,waste_percent,sort_order:state.recipeIngredients.filter(x=>x.recipe_id===state.currentRecipe.id).length});if(error)return toast(error.message);$('costQuantity').value='';await loadAll();state.currentRecipe=state.recipes.find(x=>x.id===state.currentRecipe.id);renderCosting();};
 window.removeRecipeIngredient=async id=>{const currentId=state.currentRecipe?.id;const{error}=await sb.from('recipe_ingredients').delete().eq('id',id);if(error)return toast(error.message);await loadAll();state.currentRecipe=state.recipes.find(x=>x.id===currentId);if(state.currentRecipe)renderCosting();};
-

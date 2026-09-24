@@ -103,6 +103,13 @@ body.recipe-column-resizing,body.recipe-column-resizing *{cursor:col-resize!impo
 .preparation-hint{padding:0 14px}
 .preparation-summary{grid-template-columns:repeat(2,1fr);margin-top:16px}
 .preparation-summary strong{font-size:20px}
+.costing-meta-row{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin:12px 0 16px}
+.costing-meta-row p{margin:0}
+.costing-meta-row #costingMeta{min-width:0}
+.costing-notes{display:flex;gap:6px;min-width:0;max-width:60%;margin-left:auto;color:#4b5563}
+.costing-notes-label{flex-shrink:0;font-weight:600}
+#costingNotesText{min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:600px){.costing-meta-row{flex-direction:column;gap:8px}.costing-notes{max-width:100%;margin-left:0}}
 .component-quantity{display:grid;grid-template-columns:90px 90px;gap:6px;min-width:186px}
 .component-quantity input,.component-waste{padding:7px}
 .component-waste{width:80px}
