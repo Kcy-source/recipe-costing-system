@@ -153,3 +153,6 @@ body.recipe-column-resizing,body.recipe-column-resizing *{cursor:col-resize!impo
   box-shadow:0 1px 0 #e5e7eb;
 }
 @media(max-width:850px){.sidebar nav{flex-wrap:wrap}.sidebar>div:first-child{flex-wrap:wrap}.preparation-summary{grid-template-columns:1fr}.preparation-search input{max-width:100%}}
+
+#costingDialog .table-wrap{max-height:42vh;overflow:auto}
+#costingDialog .table-wrap thead th{position:sticky;top:0;z-index:10;background:#fafbfc;box-shadow:0 1px 0 #e5e7eb}
