@@ -14,11 +14,14 @@ create table public.preparations (
 create table public.preparation_ingredients (
   id uuid primary key default gen_random_uuid(),
   preparation_id uuid not null references public.preparations(id) on delete cascade,
-  ingredient_id uuid not null references public.ingredients(id) on delete restrict,
+  chef_name text,
+  ingredient_id uuid references public.ingredients(id) on delete restrict,
   quantity numeric not null check (quantity > 0 and quantity < 'Infinity'::numeric),
   unit text not null check (btrim(unit) <> ''),
   waste_percent numeric not null default 0 check (waste_percent >= 0 and waste_percent < 100),
-  sort_order integer not null default 0
+  sort_order integer not null default 0,
+  constraint preparation_ingredients_name_or_mapping_check
+    check (nullif(btrim(chef_name), '') is not null or ingredient_id is not null)
 );
 create index preparation_ingredients_preparation_idx on public.preparation_ingredients(preparation_id);
 create index preparation_ingredients_ingredient_idx on public.preparation_ingredients(ingredient_id);
@@ -62,8 +65,8 @@ begin
     v_id := p_id;
     delete from public.preparation_ingredients where preparation_id=v_id;
   end if;
-  insert into public.preparation_ingredients(preparation_id, ingredient_id, quantity, unit, waste_percent, sort_order)
-    select v_id, (x->>'ingredient_id')::uuid, (x->>'quantity')::numeric, btrim(x->>'unit'),
+  insert into public.preparation_ingredients(preparation_id, chef_name, ingredient_id, quantity, unit, waste_percent, sort_order)
+    select v_id, nullif(btrim(x->>'chef_name'),''), nullif(x->>'ingredient_id','')::uuid, (x->>'quantity')::numeric, btrim(x->>'unit'),
       coalesce((x->>'waste_percent')::numeric,0), ordinality::integer - 1
     from jsonb_array_elements(p_items) with ordinality as a(x,ordinality);
   return v_id;

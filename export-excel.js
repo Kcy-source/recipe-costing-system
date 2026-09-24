@@ -104,7 +104,7 @@
   function buildPreparationDetails(){
     return state.preparationIngredients.map(x=>{
       const p=state.preparations.find(y=>y.id===x.preparation_id),d=rawComponentDetails(x);
-      return {'配方名称':p?.name||'','原材料':d.name,'用量':Number(x.quantity),'单位':x.unit,'损耗 %':Number(x.waste_percent),
+      return {'配方名称':p?.name||'','主厨配料':x.chef_name||d.name,'对应原材料':x.ingredient_id?d.name:'','用量':Number(x.quantity),'单位':x.unit,'损耗 %':Number(x.waste_percent),
         '单位成本':d.unitCost==null?'':round(d.unitCost,4),'成本单位':d.unit||'','配料成本':d.cost==null?'':round(d.cost,2),'状态':d.issue||'已计算'};
     });
   }

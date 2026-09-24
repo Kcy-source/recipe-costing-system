@@ -1,10 +1,9 @@
-(function setupRecipeColumnWidths(){
-  const table=document.querySelector('#recipeDialog .recipe-ingredient-map-table');
-  if(!table)return;
+(function setupIngredientColumnWidths(){
+  function setupTable(table,storageKey){
+  if(!table||table.querySelector('colgroup'))return;
   const headers=[...table.querySelectorAll('thead th')];
   const defaults=[170,215,380,150,110,115,80];
   const minimums=[90,140,180,90,85,80,68];
-  const storageKey='recipeIngredientColumnWidths_v1';
   let saved;
   try{saved=JSON.parse(localStorage.getItem(storageKey));}catch(_){/* Use defaults if storage is unavailable. */}
   const widths=defaults.map((width,index)=>Array.isArray(saved)&&Number.isFinite(saved[index])&&saved[index]>=minimums[index]?saved[index]:width);
@@ -83,4 +82,7 @@
     });
   });
   applyWidths();
+  }
+  setupTable(document.querySelector('#recipeDialog .recipe-ingredient-map-table'),'recipeIngredientColumnWidths_v1');
+  setupTable(document.querySelector('#preparationDialog .recipe-ingredient-map-table'),'preparationIngredientColumnWidths_v1');
 })();

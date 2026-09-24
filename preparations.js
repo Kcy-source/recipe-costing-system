@@ -26,17 +26,36 @@ function renderPreparations(){
       <td><div class="action-row"><button class="mini-btn" onclick="editPreparation('${p.id}')">编辑</button><button class="mini-btn danger-btn" onclick="deletePreparation('${p.id}')">删除</button></div></td></tr>`;
   }).join(''):q?'<tr><td colspan="7">找不到符合条件的配方</td></tr>':'';
 }
+function preparationIngredientSources(){
+  return state.ingredients.map(i=>({...i,kind:'ingredient',unit:i.base_unit}));
+}
 function fillPreparationIngredients(){
-  const old=$('preparationIngredient').value;
-  $('preparationIngredient').innerHTML='<option value="">选择原材料</option>'+state.ingredients.map(i=>`<option value="${i.id}">${esc(recipeSourceLabel({...i,kind:'ingredient',unit:i.base_unit}))}</option>`).join('');
-  if(state.ingredients.some(i=>i.id===old))$('preparationIngredient').value=old;
+  $('preparationIngredientLibraryOptions').innerHTML=preparationIngredientSources().map(i=>`<option value="${esc(recipeSourceLabel(i))}"></option>`).join('');
+}
+function findPreparationIngredients(query){
+  const q=String(query||'').trim().toLowerCase();if(!q)return [];
+  const sources=preparationIngredientSources(),exact=sources.filter(i=>recipeSourceLabel(i).toLowerCase()===q);
+  return exact.length?exact:sources.filter(i=>[i.name,i.name_en,i.supplier,recipeSourceLabel(i)].some(value=>String(value||'').toLowerCase().includes(q)));
+}
+function mapPreparationIngredient(index){
+  const row=preparationDraft[index];if(!row)return;
+  const matches=findPreparationIngredients($('preparationMap_'+index)?.value);
+  if(matches.length>1)return toast('找到多个原材料，请选择完整的一项');
+  if(!matches.length)return toast('找不到对应原材料，请换名称搜索');
+  row.ingredient_id=matches[0].id;row._mapping_search=recipeSourceLabel(matches[0]);renderPreparationDraft();
+}
+function clearPreparationIngredientMapping(index){
+  const row=preparationDraft[index];if(!row)return;
+  // Preserve the entered name, including lines originally saved by the older editor.
+  row.chef_name=row.chef_name||state.ingredients.find(i=>i.id===row.ingredient_id)?.name||'';
+  row.ingredient_id=null;row._mapping_search='';renderPreparationDraft();
 }
 function openPreparationForm(p=null){
   const form=$('preparationForm');form.reset();form.dataset.updatedAt=p?.updated_at||'';
   $('preparationId').value=p?.id||'';$('preparationName').value=p?.name||'';$('preparationNameEn').value=p?.name_en||'';
   $('preparationCategory').value=p?.category||'';$('preparationOutput').value=p?.output_quantity||'';
   $('preparationUnit').value=p?.output_unit||'';$('preparationMethod').value=p?.method||'';$('preparationNotes').value=p?.notes||'';
-  preparationDraft=p?state.preparationIngredients.filter(x=>x.preparation_id===p.id).map(x=>({...x})):[];
+  preparationDraft=p?state.preparationIngredients.filter(x=>x.preparation_id===p.id).map(x=>({...x,chef_name:x.chef_name||state.ingredients.find(i=>i.id===x.ingredient_id)?.name||''})):[];
   $('preparationDialogTitle').textContent=p?'编辑配方 · '+p.name:'新增配方';
   const uses=p?preparationRecipeNames(p.id):[];
   $('preparationUsage').textContent=uses.length?'用于菜品：'+uses.join('、')+'。保存后相关菜品成本会自动更新。':'';
@@ -55,12 +74,14 @@ function preparationFormData(){
   return {name:$('preparationName').value.trim(),name_en:$('preparationNameEn').value.trim(),category:$('preparationCategory').value.trim(),output_quantity:Number($('preparationOutput').value),output_unit:$('preparationUnit').value.trim(),method:$('preparationMethod').value.trim(),notes:$('preparationNotes').value.trim()};
 }
 function renderPreparationDraft(){
+  const sources=preparationIngredientSources();
   $('preparationIngredientRows').innerHTML=preparationDraft.length?preparationDraft.map((x,index)=>{
-    const d=rawComponentDetails(x);
-    return `<tr><td>${esc(d.name)}</td><td><div class="component-quantity"><input type="number" min="0.001" step="any" aria-label="配方配料用量" value="${Number(x.quantity)}" onchange="updatePreparationLine(${index},'quantity',this.value)"/><input aria-label="配方配料单位" value="${esc(x.unit)}" onchange="updatePreparationLine(${index},'unit',this.value)"/></div></td>
-      <td>${costAmount(d.unitCost,4)} / ${esc(d.unit)}</td><td><input class="component-waste" aria-label="配方配料损耗百分比" type="number" min="0" max="99.9" step="0.1" value="${Number(x.waste_percent||0)}" onchange="updatePreparationLine(${index},'waste_percent',this.value)"/></td>
+    const d=rawComponentDetails(x),source=sources.find(i=>i.id===x.ingredient_id),label=source?recipeSourceLabel(source):'';
+    return `<tr><td><strong>${esc(x.chef_name||d.name)}</strong></td><td><div class="component-quantity"><input type="number" min="0.001" step="any" aria-label="配方配料用量" value="${Number(x.quantity)}" onchange="updatePreparationLine(${index},'quantity',this.value)"/><input aria-label="配方配料单位" value="${esc(x.unit)}" onchange="updatePreparationLine(${index},'unit',this.value)"/></div></td>
+      <td><div class="ingredient-map-control"><input id="preparationMap_${index}" list="preparationIngredientLibraryOptions" value="${esc(x._mapping_search??label)}" placeholder="搜索原材料 / 供应商" oninput="preparationDraft[${index}]._mapping_search=this.value"/><button type="button" class="mini-btn map-btn" onclick="mapPreparationIngredient(${index})">对应</button>${source?`<button type="button" class="mini-btn" onclick="clearPreparationIngredientMapping(${index})">取消</button>`:''}</div><div class="mapping-status ${source?'mapped':'pending'}">${source?'已对应：'+esc(label):'待对应原材料'}</div></td>
+      <td>${d.unitCost==null?'待完成':costAmount(d.unitCost,4)+' / '+esc(d.unit)}</td><td><input class="component-waste" aria-label="配方配料损耗百分比" type="number" min="0" max="99.9" step="0.1" value="${Number(x.waste_percent||0)}" onchange="updatePreparationLine(${index},'waste_percent',this.value)"/></td>
       <td>${d.issue?'<span class="warn">'+esc(d.issue)+'</span>':costAmount(d.cost)}</td><td><button type="button" class="mini-btn danger-btn" onclick="removePreparationLine(${index})">删除</button></td></tr>`;
-  }).join(''):'<tr><td colspan="6" class="muted">加入制作这一批配方所需的原材料</td></tr>';
+  }).join(''):'';
   const data=preparationFormData(),c=preparationCosting(data,preparationDraft);
   $('preparationTotal').textContent=costAmount(c.total);$('preparationUnitCost').textContent=c.complete?costAmount(c.per,4)+' / '+data.output_unit:'待完成';
 }
@@ -69,27 +90,32 @@ function removePreparationLine(index){preparationDraft.splice(index,1);renderPre
 $('addPreparationBtn').onclick=()=>openPreparationForm();
 $('preparationSearch').addEventListener('input',renderPreparations);
 $('preparationIngredient').addEventListener('change',()=>{
-  const i=state.ingredients.find(x=>x.id===$('preparationIngredient').value);$('preparationIngredientUnit').value=i?.base_unit||'';
+  const source=preparationIngredientSources().find(i=>recipeSourceLabel(i)===$('preparationIngredient').value);
+  if(source&&!$('preparationIngredientUnit').value.trim())$('preparationIngredientUnit').value=source.unit;
 });
 $('addPreparationIngredientBtn').onclick=()=>{
-  const row={ingredient_id:$('preparationIngredient').value,quantity:Number($('preparationQuantity').value),unit:$('preparationIngredientUnit').value.trim(),waste_percent:Number($('preparationWaste').value||0)};
-  if(!row.ingredient_id||!row.unit||!Number.isFinite(row.quantity)||row.quantity<=0)return toast('请选择原材料并填写用量和单位');
-  const d=rawComponentDetails(row);if(d.issue)return toast(d.issue);
-  preparationDraft.push(row);$('preparationQuantity').value='';$('preparationWaste').value=0;renderPreparationDraft();
+  const name=$('preparationIngredient').value.trim();
+  const row={chef_name:name,ingredient_id:null,quantity:Number($('preparationQuantity').value),unit:$('preparationIngredientUnit').value.trim(),waste_percent:Number($('preparationWaste').value||0)};
+  if(!name||!row.unit||!Number.isFinite(row.quantity)||row.quantity<=0)return toast('请输入食材名称、用量和单位');
+  if(!Number.isFinite(row.waste_percent)||row.waste_percent<0||row.waste_percent>=100)return toast('请检查损耗百分比');
+  const exact=preparationIngredientSources().filter(i=>recipeSourceLabel(i)===name);
+  if(exact.length===1){row.ingredient_id=exact[0].id;row.chef_name=exact[0].name;}
+  preparationDraft.push(row);$('preparationIngredient').value='';$('preparationQuantity').value='';$('preparationWaste').value=0;renderPreparationDraft();
 };
 ['preparationOutput','preparationUnit'].forEach(id=>$(id).addEventListener('input',renderPreparationDraft));
 $('preparationForm').addEventListener('submit',async e=>{
   e.preventDefault();const form=e.currentTarget,button=$('savePreparationBtn');if(button.disabled)return;
   const data=preparationFormData();
   if(!data.name||!data.output_unit||!Number.isFinite(data.output_quantity)||data.output_quantity<=0)return toast('请填写配方名称、实际产出量和单位');
-  if(!preparationDraft.length)return toast('请至少加入一种原材料');
-  const invalid=preparationDraft.map(rawComponentDetails).find(d=>d.issue);if(invalid)return toast(invalid.issue);
+  if(!preparationDraft.length)return toast('请至少加入一种食材');
+  const items=preparationDraft.map(x=>({chef_name:String(x.chef_name||'').trim()||null,ingredient_id:x.ingredient_id||null,quantity:Number(x.quantity),unit:String(x.unit||'').trim(),waste_percent:Number(x.waste_percent||0)}));
+  if(items.some(x=>(!x.chef_name&&!x.ingredient_id)||!x.unit||!Number.isFinite(x.quantity)||x.quantity<=0||!Number.isFinite(x.waste_percent)||x.waste_percent<0||x.waste_percent>=100))return toast('请检查食材名称、用量、单位和损耗');
+  const complete=preparationCosting(data,items).complete;
   button.disabled=true;button.textContent='保存中...';
   try{
-    const items=preparationDraft.map(x=>({ingredient_id:x.ingredient_id,quantity:x.quantity,unit:x.unit,waste_percent:x.waste_percent}));
     const {error}=await sb.rpc('save_preparation',{p_id:$('preparationId').value||null,p_data:data,p_items:items,p_expected_updated_at:form.dataset.updatedAt||null});
     if(error)throw error;
-    $('preparationDialog').close();await loadAll();toast('配方已保存，相关菜品成本已更新');
+    $('preparationDialog').close();await loadAll();toast(complete?'配方已保存，相关菜品成本已更新':'配方已保存，成本待完成');
   }catch(error){toast(error.message||'配方保存失败，请重试');}finally{button.disabled=false;button.textContent='保存配方';}
 });
 const fillBaseSelectors=fillSelectors;

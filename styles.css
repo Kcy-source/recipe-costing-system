@@ -108,13 +108,13 @@ body.recipe-column-resizing,body.recipe-column-resizing *{cursor:col-resize!impo
 .component-waste{width:80px}
 #preparationForm>label{margin-bottom:12px}
 #preparationForm .dialog-head{margin-bottom:16px}
-#recipeDialog .component-quantity{grid-template-columns:repeat(2,minmax(0,1fr));min-width:0}
-#recipeDialog .ingredient-map-control{grid-template-columns:minmax(0,1fr) auto auto}
-#recipeDialog .recipe-ingredient-map-table input{min-width:0}
-#recipeDialog .component-waste{width:100%;max-width:80px}
+:is(#recipeDialog,#preparationDialog) .component-quantity{grid-template-columns:repeat(2,minmax(0,1fr));min-width:0}
+:is(#recipeDialog,#preparationDialog) .ingredient-map-control{grid-template-columns:minmax(0,1fr) auto auto}
+:is(#recipeDialog,#preparationDialog) .recipe-ingredient-map-table input{min-width:0}
+:is(#recipeDialog,#preparationDialog) .component-waste{width:100%;max-width:80px}
 
 /* Scroll ingredient rows independently so the title and add controls stay visible. */
-#recipeDialog .recipe-ingredient-scroll{
+:is(#recipeDialog,#preparationDialog) .recipe-ingredient-scroll{
   max-height:min(48vh,480px);
   max-height:min(48dvh,480px);
   overflow:auto;
@@ -122,9 +122,9 @@ body.recipe-column-resizing,body.recipe-column-resizing *{cursor:col-resize!impo
   scroll-padding-top:56px;
   scrollbar-gutter:stable;
 }
-#recipeDialog .recipe-ingredient-scroll:focus-visible{outline:2px solid #7b1e1e;outline-offset:-2px}
-#recipeDialog .recipe-ingredient-map-table{border-collapse:separate;border-spacing:0}
-#recipeDialog .recipe-ingredient-map-table thead th{
+:is(#recipeDialog,#preparationDialog) .recipe-ingredient-scroll:focus-visible{outline:2px solid #7b1e1e;outline-offset:-2px}
+:is(#recipeDialog,#preparationDialog) .recipe-ingredient-map-table{border-collapse:separate;border-spacing:0}
+:is(#recipeDialog,#preparationDialog) .recipe-ingredient-map-table thead th{
   position:sticky;
   top:0;
   z-index:5;
