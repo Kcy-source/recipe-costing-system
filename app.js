@@ -187,6 +187,7 @@ function renderDashboard(){
     :'<tr><td colspan="7">还没有食谱资料</td></tr>');
   $('statIngredients').textContent=state.ingredients.length;
   $('statRecipes').textContent=state.recipes.length;
+  $('statPreparations').textContent=state.preparations.length;
   $('statFoodCost').textContent=fc.length?pct(fc.reduce((a,b)=>a+b,0)/fc.length):'未计算';
   $('statMargin').textContent=m.length?pct(m.reduce((a,b)=>a+b,0)/m.length):'未计算';
 }
